@@ -66,6 +66,19 @@ function remove-unused-packages() {
     sudo pacman -Rns "$PACKAGES"
 }
 
+function clear-yogurt-cache() {
+    echo "Clearing cached AUR packages..."
+    CACHE_PATH="$HOME/.cache/yay"
+    SIZE=$(du -hs "$CACHE_PATH" | cut -f1)
+    TOTAL=$(ls -1q "$CACHE_PATH" | wc -l)
+    rm -rf "$CACHE_PATH"
+    mkdir -p "$CACHE_PATH"
+    echo "$TOTAL cached files deleted."
+    echo "$SIZE of disk space saved."
+    echo "Done."
+}
+
 function clear-package-cache() {
     sudo paccache -rk0
+	clear-yogurt-cache
 }
