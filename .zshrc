@@ -68,11 +68,11 @@ function remove-unused-packages() {
 
 function clear-yogurt-cache() {
     echo "Clearing cached AUR packages..."
-    CACHE_PATH="$HOME/.cache/yay"
-    SIZE=$(du -hs "$CACHE_PATH" | cut -f1)
-    TOTAL=$(ls -1q "$CACHE_PATH" | wc -l)
-    rm -rf "$CACHE_PATH"
-    mkdir -p "$CACHE_PATH"
+    local CACHE_PATH="$HOME/.cache/yay"
+    local SIZE=$(du -hs $CACHE_PATH | cut -f1)
+    local TOTAL=$(ls -1q $CACHE_PATH | wc -l)
+    rm -rf $CACHE_PATH
+    mkdir -p $CACHE_PATH
     echo "$TOTAL cached files deleted."
     echo "$SIZE of disk space saved."
     echo "Done."
