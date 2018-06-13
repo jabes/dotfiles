@@ -35,11 +35,11 @@ function batch-photo-rename() {
     local DEFAULT_DIR="."
     local DIRECTORY=${1:-$DEFAULT_DIR}
     local IMAGE_PREFIX="DSC_"
-    local IMAGE_EXTENSION=".jpg"
+    local IMAGE_EXTENSION=".JPG"
     local PATTERN=($DIRECTORY/$IMAGE_PREFIX*$IMAGE_EXTENSION)
     for FILENAME in $PATTERN; do
         let INDEX=INDEX+1
-        RENAMED=$(printf "%s/%s%03d%s" "$DIRECTORY" "$IMAGE_PREFIX" "$INDEX" "$IMAGE_EXTENSION")
+        RENAMED=$(printf "%s/%s%04d%s" "$DIRECTORY" "$IMAGE_PREFIX" "$INDEX" "$IMAGE_EXTENSION")
         if [[ "$RENAMED" == "$FILENAME" ]]; then
 	        echo "Fail: $RENAMED and $FILENAME are the same."
 	        continue
@@ -50,6 +50,29 @@ function batch-photo-rename() {
         mv -i -- "$FILENAME" "$RENAMED"
         echo "Success: $FILENAME -> $RENAMED"
     done
+}
+
+function make-timelapse-video() {
+    local DEFAULT_DIR="."
+    local DIRECTORY=${1:-$DEFAULT_DIR}
+	local INPUT_IMAGE="$DIRECTORY/DSC_%04d.JPG"
+	local FRAME_RATE=30
+	local IN_WIDTH=6000
+	local IN_HEIGHT=4000
+	local FRAME_SCALE=0.5
+	local OUT_WIDTH=$(($IN_WIDTH * $FRAME_SCALE))
+	local OUT_HEIGHT=$(($IN_HEIGHT * $FRAME_SCALE))
+	local FRAME_SIZE=$(printf "%d%s%d" "$OUT_WIDTH" "x" "$OUT_HEIGHT")
+	local VIDEO_ENCODER="libx264"
+    local PRESET="slow"
+    local RAND=$(date +%s)
+	local OUTPUT_PATH="$DIRECTORY/timelapse_$RAND.mkv"
+	ffmpeg -r $FRAME_RATE \
+	       -i $INPUT_IMAGE \
+	       -s $FRAME_SIZE \
+	       -vcodec $VIDEO_ENCODER \
+	       -preset $PRESET \
+	       $OUTPUT_PATH
 }
 
 function update-packages() {
