@@ -35,8 +35,7 @@ function github-backup {
     local TIMESTAMP=$(date "+%Y%m%d-%H%M")
     local CLONE_PATH="$GHBU_BACKUP_DIR/$GHBU_UNAME-$REPO-$TIMESTAMP.git"
     git clone --quiet --mirror git@$GHBU_GITHOST:$GHBU_UNAME/$REPO.git $CLONE_PATH
-    tar --gzip --create --file=$CLONE_PATH.tar.gz --directory=$CLONE_PATH .
-    rm --recursive --force $CLONE_PATH
+    tar --gzip --create --file=$CLONE_PATH.tar.gz --directory=$CLONE_PATH . && rm --recursive --force $CLONE_PATH
   done
 
   if $GHBU_PRUNE_OLD; then
