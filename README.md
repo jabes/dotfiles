@@ -1,7 +1,7 @@
 ### Installation
 
 ```bash
-cd ~
+cd $HOME
 git clone git@github.com:jabes/dotfiles.git .dotfiles
 git submodule update --init --recursive
 ln -s $PWD/.dotfiles/.zshrc $HOME/.zshrc
