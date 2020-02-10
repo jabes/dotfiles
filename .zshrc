@@ -1,5 +1,3 @@
-export ZSH="$HOME/.oh-my-zsh"
-
 PATHS=(
     $HOME/bin
     $HOME/.dotfiles/bin
@@ -11,8 +9,8 @@ PATHS=(
     /sbin
 )
 
-PATH=$(IFS=:; echo "${PATHS[*]}")
-export PATH
+export PATH=$(IFS=:; echo "${PATHS[*]}")
+export ZSH="$HOME/.oh-my-zsh"
 
 ZSH_THEME="robbyrussell"
 plugins=(
@@ -21,8 +19,21 @@ plugins=(
     zsh-autosuggestions
 )
 
-source $ZSH/oh-my-zsh.sh
-for SCRIPT in $HOME/bin/*.sh; do source $SCRIPT; done
+SCRIPT_PATHS=(
+	$ZSH
+    $HOME/bin/scripts
+    $HOME/.dotfiles/bin/scripts
+)
+
+for SCRIPT_PATH in "${SCRIPT_PATHS[@]}"; do
+	if [[ -d "$SCRIPT_PATH" ]]; then
+		for SCRIPT in $SCRIPT_PATH/*; do
+			if [[ -f "$SCRIPT" && $SCRIPT == *.sh ]]; then
+				source $SCRIPT
+			fi
+		done
+	fi
+done
 
 alias ..="cd .."
 
