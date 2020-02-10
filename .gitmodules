@@ -1,0 +1,3 @@
+[submodule "submodules/timelapse-deflicker"]
+	path = submodules/timelapse-deflicker
+	url = https://github.com/cyberang3l/timelapse-deflicker
