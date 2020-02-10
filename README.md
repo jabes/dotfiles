@@ -4,5 +4,11 @@
 cd ~
 git clone git@github.com:jabes/dotfiles.git .dotfiles
 ln -s $PWD/.dotfiles/.zshrc $HOME/.zshrc
-ln -s $PWD/.dotfiles/bin $HOME/bin
+mkdir -p $HOME/bin
+```
+
+#### OSX Specific
+
+```bash
+ln -s "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl" $HOME/bin/subl
 ```

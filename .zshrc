@@ -1,6 +1,18 @@
 export ZSH="$HOME/.oh-my-zsh"
-export NPM_PACKAGES="$HOME/.npm-global/bin"
-export PATH="$HOME/bin:$NPM_PACKAGES:$PATH"
+
+PATHS=(
+    $HOME/bin
+    $HOME/.dotfiles/bin
+    $HOME/.npm-global/bin
+    /usr/local/bin
+    /usr/bin
+    /bin
+    /usr/sbin
+    /sbin
+)
+
+PATH=$(IFS=:; echo "${PATHS[*]}")
+export PATH
 
 ZSH_THEME="robbyrussell"
 plugins=(
@@ -17,11 +29,7 @@ alias ..="cd .."
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	alias ls="LC_COLLATE=C ls --format=vertical --classify --color"
 	alias ll="LC_COLLATE=C ls --format=long --human-readable --almost-all --classify --color"
-	alias pbcopy="xclip -selection clipboard"
-	alias pbpaste="xclip -selection clipboard -o"
-	alias open="xdg-open"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
 	alias ls="LC_COLLATE=C ls -CFG"
 	alias ll="LC_COLLATE=C ls -lhAFG"
-	alias subl="/Applications/Sublime\ Text.app/Contents/SharedSupport/bin/subl"
 fi
