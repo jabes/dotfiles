@@ -1,8 +1,17 @@
+PATHS=(
+    $HOME/bin
+    $HOME/.dotfiles/bin
+    $HOME/.npm-global/bin
+    /usr/local/bin
+    /usr/local/sbin
+    /usr/bin
+    /usr/sbin
+    /bin
+    /sbin
+)
+
+export PATH=$(IFS=:; echo "${PATHS[*]}")
 export ZSH="$HOME/.oh-my-zsh"
-export EDITOR="subl"
-export VISUAL="vim"
-export NPM_PACKAGES="$HOME/.npm-global/bin"
-export PATH="$HOME/bin:$NPM_PACKAGES:$PATH"
 
 ZSH_THEME="robbyrussell"
 plugins=(
@@ -11,20 +20,28 @@ plugins=(
     zsh-autosuggestions
 )
 
-source $ZSH/oh-my-zsh.sh
-for SCRIPT in $HOME/bin/*.sh; do source $SCRIPT; done
+SCRIPT_PATHS=(
+	$ZSH
+    $HOME/bin/scripts
+    $HOME/.dotfiles/bin/scripts
+)
 
-alias ll="LC_COLLATE=C ls -lhA --color"
-alias ls="ls -CF"
+for SCRIPT_PATH in "${SCRIPT_PATHS[@]}"; do
+	if [[ -d "$SCRIPT_PATH" ]]; then
+		for SCRIPT in $SCRIPT_PATH/*; do
+			if [[ -f "$SCRIPT" && $SCRIPT == *.sh ]]; then
+				source $SCRIPT
+			fi
+		done
+	fi
+done
+
 alias ..="cd .."
-alias open="xdg-open"
-alias subl="subl3"
-alias pbcopy="xclip -selection clipboard"
-alias pbpaste="xclip -selection clipboard -o"
-alias diff="colordiff"
 
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/opt/google-cloud-sdk/path.zsh.inc' ]; then source '/opt/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/opt/google-cloud-sdk/completion.zsh.inc' ]; then source '/opt/google-cloud-sdk/completion.zsh.inc'; fi
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+	alias ls="LC_COLLATE=C ls --format=vertical --classify --color"
+	alias ll="LC_COLLATE=C ls --format=long --human-readable --almost-all --classify --color"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	alias ls="LC_COLLATE=C ls -CFG"
+	alias ll="LC_COLLATE=C ls -lhAFG"
+fi

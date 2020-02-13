@@ -27,12 +27,10 @@ function _rename_all_images_in_path() {
     local IMAGE_PREFIX="$2"
     local IMAGE_EXTENSION="$3"
 
-    # ls -t \
-    #    --almost-all \
-    #    --reverse \
-    #    --format=single-column \
-    #    --file-type \
-    #    "$IMAGE_DIRECTORY" | while read IMAGE_FILENAME
+    # gnu
+    # ls --sort=time --almost-all --reverse --format=single-column "$IMAGE_DIRECTORY" | while read IMAGE_FILENAME
+    # osx
+    # ls -tAr1 "$IMAGE_DIRECTORY" | while read IMAGE_FILENAME
 
     exiftool \
         -ignoreMinorErrors \
