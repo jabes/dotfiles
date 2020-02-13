@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function update-packages {
-  yay -Syu
+  yay -Syu --noconfirm
 }
 
 function list-package-updates {
@@ -9,11 +9,17 @@ function list-package-updates {
 }
 
 function remove-unused-packages {
-  # sudo pacman -Rsn $(pacman -Qdtq)
   yay -Yc
 }
 
 function clear-package-cache {
-  # sudo paccache -rk0
   yay -Sc
+}
+
+function search-remote-package {
+  yay -Ss $1
+}
+
+function search-local-package {
+  yay -Q | grep $1
 }
