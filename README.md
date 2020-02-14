@@ -22,3 +22,21 @@ Assuming you've placed Sublime Text in the Applications folder, and that you hav
 ```bash
 ln -s "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl" ~/bin/subl
 ```
+
+#### Custom Paths Example
+
+Any bash file created in the `~/bin/scripts` folder will be sourced into the shell environment.
+
+
+```bash
+touch $HOME/bin/scripts/custom-paths.sh
+chmod +x $HOME/bin/scripts/custom-paths.sh
+cat <<EOT >> $HOME/bin/scripts/custom-paths.sh
+CUSTOM_PATHS=(
+    \$HOME/.npm-global/bin
+    \$HOME/.gem/ruby/2.6.0/bin
+)
+CUSTOM_PATH=\$(IFS=:; echo "\${CUSTOM_PATHS[*]}")
+export PATH="\$CUSTOM_PATH:\$PATH"
+EOT
+```
