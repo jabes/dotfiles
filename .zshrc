@@ -1,7 +1,6 @@
 PATHS=(
     $HOME/bin
     $HOME/.dotfiles/bin
-    $HOME/.npm-global/bin
     /usr/local/bin
     /usr/local/sbin
     /usr/bin
