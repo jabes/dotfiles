@@ -23,6 +23,12 @@ Assuming you've placed Sublime Text in the Applications folder, and that you hav
 ln -s "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl" ~/bin/subl
 ```
 
+Also some Linux distributions may require a symlink as illustrated below.
+
+```bash
+ln -s /usr/bin/subl3 $HOME/bin/subl
+```
+
 #### Custom Paths Example
 
 Any bash file created in the `~/bin/scripts` folder will be sourced into the shell environment.
