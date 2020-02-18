@@ -11,6 +11,7 @@ function upgrade-packages {
         softwareupdate --install --all
         if hash brew 2>/dev/null; then brew update && brew upgrade; fi
     fi
+    echo "Done."
 }
 
 function list-upgradable-packages {
@@ -24,6 +25,7 @@ function list-upgradable-packages {
         softwareupdate --list
         if hash brew 2>/dev/null; then brew update && brew outdated; fi
     fi
+    echo "Done."
 }
 
 function remove-unused-packages {
@@ -39,6 +41,7 @@ function remove-unused-packages {
             brew bundle cleanup --force
         fi
     fi
+    echo "Done."
 }
 
 function clear-package-cache {
@@ -51,6 +54,7 @@ function clear-package-cache {
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if hash brew 2>/dev/null; then brew cleanup && rm -rf "$(brew --cache)"; fi
     fi
+    echo "Done."
 }
 
 function search-remote-package {
@@ -64,6 +68,7 @@ function search-remote-package {
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if hash brew 2>/dev/null; then brew search $PATTERN; fi
     fi
+    echo "Done."
 }
 
 function search-local-package {
@@ -77,4 +82,5 @@ function search-local-package {
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if hash brew 2>/dev/null; then brew list | grep $PATTERN; fi
     fi
+    echo "Done."
 }
