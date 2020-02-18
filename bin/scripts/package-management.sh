@@ -5,7 +5,7 @@ function upgrade-packages {
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
         if hash yay 2>/dev/null; then yay --sync --refresh --sysupgrade --noconfirm
         elif hash pacman 2>/dev/null; then pacman --sync --refresh --sysupgrade --noconfirm
-        elif hash apt 2>/dev/null; then apt update && apt upgrade
+        elif hash apt 2>/dev/null; then apt update && apt upgrade --assume-yes
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         softwareupdate --install --all
