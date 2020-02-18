@@ -35,8 +35,8 @@ function remove-unused-packages {
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if hash brew 2>/dev/null; then
-            if [ ! -f $HOME/Brewfile ]; then brew bundle dump; fi
-            brew bundle --force cleanup
+            brew bundle dump --force
+            brew bundle cleanup --force
         fi
     fi
 }
