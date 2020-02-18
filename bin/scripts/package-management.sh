@@ -3,8 +3,8 @@
 function update-packages {
     echo "Upgrading packages..."
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        if hash yay 2>/dev/null; then yay --sync --refresh --upgrades --noconfirm
-        elif hash pacman 2>/dev/null; then pacman --sync --refresh --upgrades --noconfirm
+        if hash yay 2>/dev/null; then yay --sync --refresh --sysupgrade --noconfirm
+        elif hash pacman 2>/dev/null; then pacman --sync --refresh --sysupgrade --noconfirm
         elif hash apt 2>/dev/null; then apt update && apt upgrade
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
@@ -16,9 +16,9 @@ function update-packages {
 function list-package-updates {
     echo "Listing out-of-date packages..."
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        if hash yay 2>/dev/null; then yay --show --upgrades
-        elif hash pacman 2>/dev/null; then pacman -Syyu -p
-        elif hash apt 2>/dev/null; then apt list --upgradable
+        if hash yay 2>/dev/null; then yay yay --sync --refresh && yay --show --upgrades
+        elif hash pacman 2>/dev/null; then pacman --sync --refresh && pacman --query --upgrades
+        elif hash apt 2>/dev/null; then apt update && apt list --upgradable
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         softwareupdate --list
