@@ -16,7 +16,7 @@ function upgrade-packages {
 function list-upgradable-packages {
     echo "Listing out-of-date packages..."
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        if hash yay 2>/dev/null; then yay yay --sync --refresh && yay --show --upgrades
+        if hash yay 2>/dev/null; then yay --sync --refresh && yay --show --upgrades
         elif hash pacman 2>/dev/null; then pacman --sync --refresh && pacman --query --upgrades
         elif hash apt 2>/dev/null; then apt update && apt list --upgradable
         fi
