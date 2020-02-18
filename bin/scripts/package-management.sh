@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-function update-packages {
+function upgrade-packages {
     echo "Upgrading packages..."
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
         if hash yay 2>/dev/null; then yay --sync --refresh --sysupgrade --noconfirm
@@ -13,7 +13,7 @@ function update-packages {
     fi
 }
 
-function list-package-updates {
+function list-upgradable-packages {
     echo "Listing out-of-date packages..."
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
         if hash yay 2>/dev/null; then yay yay --sync --refresh && yay --show --upgrades
