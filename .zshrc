@@ -36,11 +36,3 @@ for SCRIPT_PATH in "${SCRIPT_PATHS[@]}"; do
 done
 
 alias ..="cd .."
-
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    alias ls="LC_COLLATE=C ls --format=vertical --classify --color"
-    alias ll="LC_COLLATE=C ls --format=long --human-readable --almost-all --classify --color"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    alias ls="LC_COLLATE=C ls -CFG"
-    alias ll="LC_COLLATE=C ls -lhAFG"
-fi
