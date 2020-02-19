@@ -5,11 +5,15 @@ function upgrade-packages {
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
         if hash yay 2>/dev/null; then yay --sync --refresh --sysupgrade --noconfirm
         elif hash pacman 2>/dev/null; then pacman --sync --refresh --sysupgrade --noconfirm
-        elif hash apt 2>/dev/null; then apt update && apt upgrade --assume-yes
+        elif hash apt 2>/dev/null; then apt update --quiet=2 && apt upgrade --quiet --assume-yes
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-        softwareupdate --install --all
-        if hash brew 2>/dev/null; then brew update && brew upgrade; fi
+        if hash brew 2>/dev/null; then
+            brew update >/dev/null
+            local RESULT=$(brew upgrade)
+            if [ -z $RESULT ]; then echo "No packages to update."
+            else echo $RESULT; fi
+        fi
     fi
     echo "Done."
 }
@@ -19,11 +23,15 @@ function list-upgradable-packages {
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
         if hash yay 2>/dev/null; then yay --sync --refresh && yay --show --upgrades
         elif hash pacman 2>/dev/null; then pacman --sync --refresh && pacman --query --upgrades
-        elif hash apt 2>/dev/null; then apt update && apt list --upgradable
+        elif hash apt 2>/dev/null; then apt update --quiet=2 && apt list --quiet --upgradable
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-        softwareupdate --list
-        if hash brew 2>/dev/null; then brew update && brew outdated; fi
+        if hash brew 2>/dev/null; then
+            brew update >/dev/null
+            local RESULT=$(brew outdated)
+            if [ -z $RESULT ]; then echo "No packages are out of date."
+            else echo $RESULT; fi
+        fi
     fi
     echo "Done."
 }
