@@ -5,7 +5,7 @@ function upgrade-packages {
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
         if hash yay 2>/dev/null; then yay --sync --refresh --sysupgrade --noconfirm
         elif hash pacman 2>/dev/null; then pacman --sync --refresh --sysupgrade --noconfirm
-        elif hash apt 2>/dev/null; then apt update --quiet=2 && apt upgrade --quiet --assume-yes
+        elif hash apt 2>/dev/null; then apt update --quiet=3 && apt upgrade --quiet=2 --assume-yes
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if hash brew 2>/dev/null; then
@@ -23,7 +23,7 @@ function list-upgradable-packages {
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
         if hash yay 2>/dev/null; then yay --sync --refresh && yay --show --upgrades
         elif hash pacman 2>/dev/null; then pacman --sync --refresh && pacman --query --upgrades
-        elif hash apt 2>/dev/null; then apt update --quiet=2 && apt list --quiet --upgradable
+        elif hash apt 2>/dev/null; then apt update --quiet=3 && apt list --quiet=2 --upgradable
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if hash brew 2>/dev/null; then
@@ -92,3 +92,14 @@ function search-local-package {
     fi
     echo "Done."
 }
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
+SCRIPT_FILENAME=$(basename "$0")
+SCRIPT_FULL_PATH="$SCRIPT_DIR/$SCRIPT_FILENAME"
+
+function sudo-upgrade-packages { sudo bash -c "source $SCRIPT_FULL_PATH && upgrade-packages" }
+function sudo-list-upgradable-packages { sudo bash -c "source $SCRIPT_FULL_PATH && list-upgradable-packages" }
+function sudo-remove-unused-packages { sudo bash -c "source $SCRIPT_FULL_PATH && remove-unused-packages" }
+function sudo-clear-package-cache { sudo bash -c "source $SCRIPT_FULL_PATH && clear-package-cache" }
+function sudo-search-remote-package { sudo bash -c "source $SCRIPT_FULL_PATH && search-remote-package" }
+function sudo-search-local-package { sudo bash -c "source $SCRIPT_FULL_PATH && search-local-package" }
