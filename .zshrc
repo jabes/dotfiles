@@ -36,3 +36,7 @@ for SCRIPT_PATH in "${SCRIPT_PATHS[@]}"; do
 done
 
 alias ..="cd .."
+
+# http://zsh.sourceforge.net/Doc/Release/Options.html
+setopt rm_star_silent
+unsetopt nomatch

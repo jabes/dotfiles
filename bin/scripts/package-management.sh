@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+function --remove-path-and-display-info {
+    local CACHE_PATH="$1"
+    local CACHE_SIZE="$(du --human-readable --summarize $CACHE_PATH)"
+    local FILE_COUNT="$(find $CACHE_PATH/{*,.*} -print 2>/dev/null | wc --lines)"
+    rm --recursive --force $CACHE_PATH/{*,.*}
+    echo "Removed $FILE_COUNT items: $CACHE_SIZE"
+}
+
 function upgrade-packages {
     echo "Upgrading packages..."
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
@@ -9,11 +17,24 @@ function upgrade-packages {
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if hash brew 2>/dev/null; then
+            echo -n "Brew: "
             brew update >/dev/null
-            local RESULT=$(brew upgrade)
-            if [ -z $RESULT ]; then echo "No packages to update."
+            local RESULT="$(brew upgrade 2>&1)"
+            if [ -z $RESULT ]; then echo "Up-to-date."
             else echo $RESULT; fi
         fi
+    fi
+    if hash npm 2>/dev/null; then
+        echo -n "NPM: "
+        local RESULT="$(npm update --global 2>&1)"
+        if [ -z $RESULT ]; then echo "Up-to-date."
+        else echo $RESULT; fi
+    fi
+    if hash composer 2>/dev/null; then
+        echo -n "Composer: "
+        local RESULT="$(composer global update --no-interaction --no-progress --no-suggest 2>&1)"
+        if [[ $RESULT == *"Nothing to install or update"* ]]; then echo "Up-to-date."
+        else echo $RESULT; fi
     fi
     echo "Done."
 }
@@ -27,11 +48,24 @@ function list-upgradable-packages {
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if hash brew 2>/dev/null; then
+            echo -n "Brew: ";
             brew update >/dev/null
-            local RESULT=$(brew outdated)
+            local RESULT="$(brew outdated 2>&1)"
             if [ -z $RESULT ]; then echo "No packages are out of date."
             else echo $RESULT; fi
         fi
+    fi
+    if hash npm 2>/dev/null; then
+        echo -n "NPM: "
+        local RESULT="$(npm outdated --global 2>&1)"
+        if [ -z $RESULT ]; then echo "No packages are out of date."
+        else echo $RESULT; fi
+    fi
+    if hash composer 2>/dev/null; then
+        echo -n "Composer: "
+        local RESULT="$(composer global outdated --no-interaction 2>&1 | tail -n +2)"
+        if [ -z $RESULT ]; then echo "No packages are out of date."
+        else echo $RESULT; fi
     fi
     echo "Done."
 }
@@ -60,8 +94,10 @@ function clear-package-cache {
         elif hash apt 2>/dev/null; then apt clean
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-        if hash brew 2>/dev/null; then brew cleanup && rm -rf "$(brew --cache)"; fi
+        if hash brew 2>/dev/null; then --remove-path-and-display-info $(brew --cache); fi
     fi
+    if hash npm 2>/dev/null; then --remove-path-and-display-info $(npm config get cache); fi
+    if hash composer 2>/dev/null; then --remove-path-and-display-info $(composer config --global cache-dir); fi
     echo "Done."
 }
 

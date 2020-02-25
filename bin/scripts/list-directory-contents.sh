@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Undue any existing aliases to ls
+unalias ls
+
 LS_BASE_FLAGS=(
     "--group-directories-first"
     "--classify"
