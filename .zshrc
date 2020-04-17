@@ -21,8 +21,8 @@ plugins=(
 
 SCRIPT_PATHS=(
     $ZSH
-    $HOME/bin/scripts
     $HOME/.dotfiles/bin/scripts
+    $HOME/bin/scripts
 )
 
 for SCRIPT_PATH in "${SCRIPT_PATHS[@]}"; do

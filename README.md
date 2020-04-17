@@ -40,7 +40,7 @@ chmod +x $HOME/bin/scripts/custom-paths.sh
 cat <<EOT >> $HOME/bin/scripts/custom-paths.sh
 CUSTOM_PATHS=(
     \$HOME/.npm-global/bin
-    \$HOME/.gem/ruby/2.6.0/bin
+    \$HOME/.composer/vendor/bin
 )
 CUSTOM_PATH=\$(IFS=:; echo "\${CUSTOM_PATHS[*]}")
 export PATH="\$CUSTOM_PATH:\$PATH"
