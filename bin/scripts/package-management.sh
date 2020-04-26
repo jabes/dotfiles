@@ -36,7 +36,7 @@ function run-process-in-background() {
   local CMD_NAME="$1"
   local CMD_STRING="$2"
   local PID
-  if hash "$CMD_NAME" 2>/dev/null; then
+  if hash "$CMD_NAME" >/dev/null 2>&1; then
     PID=$(nohup sh -c "$CMD_STRING" >/dev/null 2>&1 & echo $!)
     echo -n "Updating $CMD_NAME "
     while ps -p "$PID" >/dev/null; do echo -n "." && sleep 1; done
@@ -133,3 +133,6 @@ EOL
   text_yellow "========================================="
   text_magenta "$MSG"
 }
+
+ask-to-upgrade
+
