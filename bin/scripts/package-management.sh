@@ -81,15 +81,15 @@ function upgrade-packages() {
   text_yellow "= Upgrading packages ===================="
   text_yellow "========================================="
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    run-process-in-background "yay" "yay --sync --refresh --sysupgrade --noconfirm"
-    run-process-in-background "pacman" "pacman --sync --refresh --sysupgrade --noconfirm"
-    run-process-in-background "apt" "apt update && apt dist-upgrade --assume-yes --no-install-recommends --fix-broken --fix-missing --quiet"
+    run-process-in-background 'yay' 'yay --sync --refresh --sysupgrade --noconfirm'
+    run-process-in-background 'pacman' 'pacman --sync --refresh --sysupgrade --noconfirm'
+    run-process-in-background 'apt' 'apt update && apt dist-upgrade --assume-yes --no-install-recommends --fix-broken --fix-missing --quiet'
   elif [[ "$OSTYPE" == "darwin"* ]]; then
-    run-process-in-background "brew" "brew update && brew upgrade"
+    run-process-in-background 'brew' 'brew update && brew upgrade'
   fi
-  run-process-in-background "npm" "npm update --global"
-  run-process-in-background "composer" "composer self-update && composer global update --no-interaction --no-progress --no-suggest"
-  run-process-in-background "pip3" "pip3 list --outdated --format=freeze | grep --invert-match '^\-e' | cut --delimiter='=' --fields=1 | xargs -n1 pip3 install --upgrade"
+  run-process-in-background 'npm' 'npm update --global'
+  run-process-in-background 'composer' 'composer self-update && composer global update --no-interaction --no-progress --no-suggest'
+  run-process-in-background 'pip3' 'pip3 list --outdated --format=freeze | grep --invert-match "^\-e" | cut --delimiter="=" --fields=1 | xargs -n1 pip3 install --upgrade'
 }
 
 function remove-unused-packages() {
@@ -97,15 +97,15 @@ function remove-unused-packages() {
   text_yellow "= Removing orphan packages =============="
   text_yellow "========================================="
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    run-process-in-background "yay" "yay --yay --clean"
-    run-process-in-background "pacman" "pacman --remove --nosave --recursive $(pacman --query --deps --unrequired --quiet)"
-    run-process-in-background "apt" "apt autoremove --purge"
+    run-process-in-background 'yay' 'yay --yay --clean'
+    run-process-in-background 'pacman' 'pacman --remove --nosave --recursive $(pacman --query --deps --unrequired --quiet)'
+    run-process-in-background 'apt' 'apt autoremove --purge'
   elif [[ "$OSTYPE" == "darwin"* ]]; then
-    run-process-in-background "brew" "brew cleanup --prune && \
-                                            brew bundle dump --force && \
-                                            brew bundle cleanup --force"
+    run-process-in-background 'brew' 'brew cleanup --prune && \
+                                      brew bundle dump --force && \
+                                      brew bundle cleanup --force'
   fi
-  run-process-in-background "npm" "npm prune --global"
+  run-process-in-background 'npm' 'npm prune --global'
 }
 
 function clear-package-cache() {
@@ -113,9 +113,9 @@ function clear-package-cache() {
   text_yellow "= Clearing package cache ================"
   text_yellow "========================================="
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    run-process-in-background "yay" "yay --sync --clean"
-    run-process-in-background "pacman" "pacman --sync --clean"
-    run-process-in-background "apt" "apt clean"
+    run-process-in-background 'yay' 'yay --sync --clean'
+    run-process-in-background 'pacman' 'pacman --sync --clean'
+    run-process-in-background 'apt' 'apt clean'
     if hash pip3 2>/dev/null; then remove-path-and-display-info "$HOME/.cache/pip"; fi
   elif [[ "$OSTYPE" == "darwin"* ]]; then
     if hash brew 2>/dev/null; then remove-path-and-display-info "$(brew --cache)"; fi
