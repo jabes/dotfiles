@@ -47,9 +47,16 @@ function run-process-in-background() {
 function ask-to-upgrade() {
   # Create a lock file to prevent further requests until cleared
   local LOCK_FILE="/tmp/StOp_AsKiNg_Me_To_UpDaTe.lock"
-  if [[ -e "$LOCK_FILE" ]]; then
+  local T1=$(cat $LOCK_FILE); \
+  local T2=$(date +%s); \
+  local TIMEDIFF_MILLISECONDS=$(expr $T2 - $T1); \
+  local TIMEDIFF_SECONDS=$(expr $TIMEDIFF_MILLISECONDS / 1000); \
+  local TIMEDIFF_MINUTES=$(expr $TIMEDIFF_SECONDS / 60); \
+  local TIMEDIFF_HOURS=$(expr $TIMEDIFF_MINUTES / 60); \
+  if [ $TIMEDIFF_HOURS -gt 24 ]; then \
     # Lock file exists...
     # No need to prompt user at this point
+    # Wait until 24 hours have passed
     echo -n
   else
     text_cyan "Would you like to update your system? [yes/no]"
