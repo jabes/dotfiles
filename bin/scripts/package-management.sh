@@ -39,41 +39,45 @@ function run-process-in-background() {
   if hash "$CMD_NAME" >/dev/null 2>&1; then
     PID=$(nohup sh -c "$CMD_STRING" >/dev/null 2>&1 & echo $!)
     echo -n "Updating $CMD_NAME "
-    while ps -p "$PID" >/dev/null; do echo -n "." && sleep 1; done
+    while ps -p "$PID" >/dev/null 2>&1; do echo -n "." && sleep 1; done
     text_green " Done!"
   fi
 }
 
-function ask-to-upgrade() {
-  # Create a lock file to prevent further requests until cleared
+function check-lock-file() {
+  # Check if lock file exists or has a date greater than 24 hours
   local LOCK_FILE="/tmp/StOp_AsKiNg_Me_To_UpDaTe.lock"
-  local T1=$(cat $LOCK_FILE); \
-  local T2=$(date +%s); \
-  local TIMEDIFF_MILLISECONDS=$(expr $T2 - $T1); \
-  local TIMEDIFF_SECONDS=$(expr $TIMEDIFF_MILLISECONDS / 1000); \
-  local TIMEDIFF_MINUTES=$(expr $TIMEDIFF_SECONDS / 60); \
-  local TIMEDIFF_HOURS=$(expr $TIMEDIFF_MINUTES / 60); \
-  if [ $TIMEDIFF_HOURS -gt 24 ]; then \
-    # Lock file exists...
-    # No need to prompt user at this point
-    # Wait until 24 hours have passed
-    echo -n
+  if [ -e "$LOCK_FILE" ]; then
+    local T1=$(cat $LOCK_FILE);
+    local T2=$(date +%s);
+    local TIMEDIFF_MILLISECONDS=$(expr $T2 - $T1);
+    local TIMEDIFF_SECONDS=$(expr $TIMEDIFF_MILLISECONDS / 1000);
+    local TIMEDIFF_MINUTES=$(expr $TIMEDIFF_SECONDS / 60);
+    local TIMEDIFF_HOURS=$(expr $TIMEDIFF_MINUTES / 60);
+    if [ $TIMEDIFF_HOURS -gt 24 ]; then
+      ask-to-upgrade
+    fi
   else
-    text_cyan "Would you like to update your system? [yes/no]"
-    read -r response
-    case "$response" in
-    [yY][eE][sS] | [yY])
-      upgrade-packages
-      remove-unused-packages
-      clear-package-cache
-      print-all-done
-      date +%s >"$LOCK_FILE"
-      ;;
-    *)
-      # Do nothing
-      ;;
-    esac
+    ask-to-upgrade
   fi
+  # Create lock file after upgrade
+  date +%s >"$LOCK_FILE"
+}
+
+function ask-to-upgrade() {
+  text_cyan "Would you like to update your system? [yes/no]"
+  read -r response
+  case "$response" in
+  [yY][eE][sS] | [yY])
+    upgrade-packages
+    remove-unused-packages
+    clear-package-cache
+    print-all-done
+    ;;
+  *)
+    # Do nothing
+    ;;
+  esac
 }
 
 function upgrade-packages() {
@@ -141,5 +145,4 @@ EOL
   text_magenta "$MSG"
 }
 
-ask-to-upgrade
-
+check-lock-file
