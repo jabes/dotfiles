@@ -47,14 +47,14 @@ function run-process-in-background() {
 function check-lock-file() {
   # Check if lock file exists or has a date greater than 24 hours
   local LOCK_FILE="/tmp/StOp_AsKiNg_Me_To_UpDaTe.lock"
-  if [ -e "$LOCK_FILE" ]; then
+  if [[ -e "$LOCK_FILE" ]]; then
     local T1=$(cat $LOCK_FILE);
     local T2=$(date +%s);
     local TIMEDIFF_MILLISECONDS=$(expr $T2 - $T1);
     local TIMEDIFF_SECONDS=$(expr $TIMEDIFF_MILLISECONDS / 1000);
     local TIMEDIFF_MINUTES=$(expr $TIMEDIFF_SECONDS / 60);
     local TIMEDIFF_HOURS=$(expr $TIMEDIFF_MINUTES / 60);
-    if [ $TIMEDIFF_HOURS -gt 24 ]; then
+    if [[ $TIMEDIFF_HOURS -gt 24 ]]; then
       ask-to-upgrade
     fi
   else
