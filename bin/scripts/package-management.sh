@@ -56,10 +56,10 @@ function check-lock-file() {
   if [[ -e "$LOCK_FILE" ]]; then
     T1=$(cat "$LOCK_FILE");
     T2=$(date +%s);
-    TIMEDIFF_MILLISECONDS=$(("$T2" - "$T1"));
-    TIMEDIFF_SECONDS=$(("$TIMEDIFF_MILLISECONDS" / 1000));
-    TIMEDIFF_MINUTES=$(("$TIMEDIFF_SECONDS" / 60));
-    TIMEDIFF_HOURS=$(("$TIMEDIFF_MINUTES" / 60));
+    TIMEDIFF_MILLISECONDS=$((T2 - T1));
+    TIMEDIFF_SECONDS=$((TIMEDIFF_MILLISECONDS / 1000));
+    TIMEDIFF_MINUTES=$((TIMEDIFF_SECONDS / 60));
+    TIMEDIFF_HOURS=$((TIMEDIFF_MINUTES / 60));
     if [[ "$TIMEDIFF_HOURS" -gt 24 ]]; then
       ask-to-upgrade
     fi
