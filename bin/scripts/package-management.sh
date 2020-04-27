@@ -45,23 +45,29 @@ function run-process-in-background() {
 }
 
 function check-lock-file() {
+  local T1
+  local T2
+  local TIMEDIFF_MILLISECONDS
+  local TIMEDIFF_SECONDS
+  local TIMEDIFF_MINUTES
+  local TIMEDIFF_HOURS
   # Check if lock file exists or has a date greater than 24 hours
   local LOCK_FILE="/tmp/StOp_AsKiNg_Me_To_UpDaTe.lock"
   if [[ -e "$LOCK_FILE" ]]; then
-    local T1=$(cat $LOCK_FILE);
-    local T2=$(date +%s);
-    local TIMEDIFF_MILLISECONDS=$(expr $T2 - $T1);
-    local TIMEDIFF_SECONDS=$(expr $TIMEDIFF_MILLISECONDS / 1000);
-    local TIMEDIFF_MINUTES=$(expr $TIMEDIFF_SECONDS / 60);
-    local TIMEDIFF_HOURS=$(expr $TIMEDIFF_MINUTES / 60);
-    if [[ $TIMEDIFF_HOURS -gt 24 ]]; then
+    T1=$(cat "$LOCK_FILE");
+    T2=$(date +%s);
+    TIMEDIFF_MILLISECONDS=$(("$T2" - "$T1"));
+    TIMEDIFF_SECONDS=$(("$TIMEDIFF_MILLISECONDS" / 1000));
+    TIMEDIFF_MINUTES=$(("$TIMEDIFF_SECONDS" / 60));
+    TIMEDIFF_HOURS=$(("$TIMEDIFF_MINUTES" / 60));
+    if [[ "$TIMEDIFF_HOURS" -gt 24 ]]; then
       ask-to-upgrade
     fi
   else
     ask-to-upgrade
   fi
   # Create lock file after upgrade
-  date +%s >"$LOCK_FILE"
+  date +%s > "$LOCK_FILE"
 }
 
 function ask-to-upgrade() {
@@ -84,11 +90,11 @@ function upgrade-packages() {
   text_yellow "========================================="
   text_yellow "= Upgrading packages ===================="
   text_yellow "========================================="
-  if [[ "$OSTYPE" == "linux-gnu" ]]; then
+  if [[ "$OSTYPE" == 'linux-gnu' ]]; then
     run-process-in-background 'yay' 'yay --sync --refresh --sysupgrade --noconfirm'
     run-process-in-background 'pacman' 'pacman --sync --refresh --sysupgrade --noconfirm'
     run-process-in-background 'apt' 'apt update && apt dist-upgrade --assume-yes --no-install-recommends --fix-broken --fix-missing --quiet'
-  elif [[ "$OSTYPE" == "darwin"* ]]; then
+  elif [[ "$OSTYPE" == 'darwin'* ]]; then
     run-process-in-background 'brew' 'brew update && brew upgrade'
   fi
   run-process-in-background 'npm' 'npm update --global'
@@ -100,14 +106,12 @@ function remove-unused-packages() {
   text_yellow "========================================="
   text_yellow "= Removing orphan packages =============="
   text_yellow "========================================="
-  if [[ "$OSTYPE" == "linux-gnu" ]]; then
+  if [[ "$OSTYPE" == 'linux-gnu' ]]; then
     run-process-in-background 'yay' 'yay --yay --clean'
     run-process-in-background 'pacman' 'pacman --remove --nosave --recursive $(pacman --query --deps --unrequired --quiet)'
     run-process-in-background 'apt' 'apt autoremove --purge'
-  elif [[ "$OSTYPE" == "darwin"* ]]; then
-    run-process-in-background 'brew' 'brew cleanup --prune && \
-                                      brew bundle dump --force && \
-                                      brew bundle cleanup --force'
+  elif [[ "$OSTYPE" == 'darwin'* ]]; then
+    run-process-in-background 'brew' 'brew cleanup --prune && brew bundle dump --force && brew bundle cleanup --force'
   fi
   run-process-in-background 'npm' 'npm prune --global'
 }
@@ -116,12 +120,12 @@ function clear-package-cache() {
   text_yellow "========================================="
   text_yellow "= Clearing package cache ================"
   text_yellow "========================================="
-  if [[ "$OSTYPE" == "linux-gnu" ]]; then
+  if [[ "$OSTYPE" == 'linux-gnu' ]]; then
     run-process-in-background 'yay' 'yay --sync --clean'
     run-process-in-background 'pacman' 'pacman --sync --clean'
     run-process-in-background 'apt' 'apt clean'
     if hash pip3 2>/dev/null; then remove-path-and-display-info "$HOME/.cache/pip"; fi
-  elif [[ "$OSTYPE" == "darwin"* ]]; then
+  elif [[ "$OSTYPE" == 'darwin'* ]]; then
     if hash brew 2>/dev/null; then remove-path-and-display-info "$(brew --cache)"; fi
     if hash pip3 2>/dev/null; then remove-path-and-display-info "$HOME/Library/Caches/pip"; fi
   fi
