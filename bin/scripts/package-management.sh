@@ -47,7 +47,6 @@ function run-process-in-background() {
 function check-lock-file() {
   local T1
   local T2
-  local TIMEDIFF_MILLISECONDS
   local TIMEDIFF_SECONDS
   local TIMEDIFF_MINUTES
   local TIMEDIFF_HOURS
@@ -56,8 +55,7 @@ function check-lock-file() {
   if [[ -e "$LOCK_FILE" ]]; then
     T1=$(cat "$LOCK_FILE");
     T2=$(date +%s);
-    TIMEDIFF_MILLISECONDS=$((T2 - T1));
-    TIMEDIFF_SECONDS=$((TIMEDIFF_MILLISECONDS / 1000));
+    TIMEDIFF_SECONDS=$((T2 - T1));
     TIMEDIFF_MINUTES=$((TIMEDIFF_SECONDS / 60));
     TIMEDIFF_HOURS=$((TIMEDIFF_MINUTES / 60));
     if [[ "$TIMEDIFF_HOURS" -gt 24 ]]; then
@@ -100,6 +98,7 @@ function upgrade-packages() {
   run-process-in-background 'npm' 'npm update --global'
   run-process-in-background 'composer' 'composer self-update && composer global update --no-interaction --no-progress --no-suggest'
   run-process-in-background 'pip3' 'pip3 list --outdated --format=freeze | grep --invert-match "^\-e" | cut --delimiter="=" --fields=1 | xargs -n1 pip3 install --upgrade'
+  run-process-in-background 'gcloud' 'gcloud components update'
 }
 
 function remove-unused-packages() {
