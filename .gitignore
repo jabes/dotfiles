@@ -1,5 +1,6 @@
 **/.*
 !.gitignore
+!.npmrc
 !.zshrc
 
 bin/scripts/timelapse-deflicker.pl
