@@ -6,21 +6,39 @@ LOCAL_BIN_SCRIPTS_PATH="$HOME/bin/scripts"
 ZSH="$HOME/.oh-my-zsh"
 ZSH_CUSTOM="$ZSH/custom"
 
+function run_process_in_background() {
+  local CMD_STRING="$2"
+  local PID
+  PID=$(
+    nohup sh -c "$CMD_STRING" >/dev/null 2>&1 &
+    echo $!
+  )
+  while ps -p "$PID" >/dev/null 2>&1; do
+    echo -n "."
+    sleep 1
+  done
+}
+
 function multi_arch_install() {
   local PACKAGE="$1"
   if hash "$PACKAGE" 2>/dev/null; then
     echo "Package '$PACKAGE' is already installed."
   else
     if [[ "$OSTYPE" == 'linux-gnu' ]]; then
-      if hash "apt" 2>/dev/null; then sudo apt install --assume-yes "$PACKAGE"
-      elif hash "pacman" 2>/dev/null; then sudo pacman --noconfirm --sync "$PACKAGE"
+      echo -n "Installing '$PACKAGE' package..."
+      if hash "apt" 2>/dev/null; then run_process_in_background "sudo apt install --assume-yes $PACKAGE"
+      elif hash "pacman" 2>/dev/null; then run_process_in_background "sudo pacman --noconfirm --sync $PACKAGE"
       else
+        echo
         echo "Unable to install package '$PACKAGE', aborting."
         exit
       fi
+      echo "Done"
     elif [[ "$OSTYPE" == 'darwin'* ]]; then
       if hash "brew" 2>/dev/null; then
-        brew install "$PACKAGE"
+        echo -n "Installing '$PACKAGE' package"
+        run_process_in_background "brew install $PACKAGE"
+        echo "Done"
       else
         echo "Installing Homebrew..."
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
@@ -37,20 +55,23 @@ function multi_arch_channel_install() {
   local SOURCE_REPOSITORY_URL="$4"
   local SOURCE_DISTRIBUTION="$5"
   if [[ "$OSTYPE" == 'linux-gnu' ]]; then
+    echo -n "Adding '$SOURCE_NAME' repository..."
     if hash "apt" 2>/dev/null; then
       multi_arch_install "apt-transport-https"
       multi_arch_install "ca-certificates"
       curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo apt-key add -
       echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "/etc/apt/sources.list.d/$SOURCE_NAME.list"
-      sudo apt update
+      run_process_in_background "sudo apt update"
     elif hash "pacman" 2>/dev/null; then
       curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo pacman-key --add - && sudo pacman-key --lsign-key "$GPG_KEY_ID"
       echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf
-      sudo pacman --sync --refresh
+      run_process_in_background "sudo pacman --sync --refresh"
     else
+      echo
       echo "Unable to add repository '$SOURCE_REPOSITORY_URL', aborting."
       exit
     fi
+    echo "Done"
   fi
 }
 
