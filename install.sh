@@ -3,6 +3,8 @@
 REPO_URL="git@github.com:jabes/dotfiles.git"
 INSTALL_PATH="$HOME/.dotfiles"
 LOCAL_BIN_SCRIPTS_PATH="$HOME/bin/scripts"
+ZSH="$HOME/.oh-my-zsh"
+ZSH_CUSTOM="$ZSH/custom"
 
 function multi_arch_install() {
   local PACKAGE="$1"
@@ -37,18 +39,32 @@ multi_arch_install "zsh"
 multi_arch_install "vim"
 
 if [[ -d "$INSTALL_PATH" ]]; then
-  echo "Dotfiles repo is already installed."
+  echo "Dotfiles repo is already cloned."
 else
   echo "Cloning Dotfiles repo..."
   git clone --recurse-submodules -j8 "$REPO_URL" "$INSTALL_PATH"
 fi
 
-echo "Linking files..."
+echo -n "Linking files..."
 ln -s -f "$INSTALL_PATH/.npmrc" "$HOME/.npmrc"
 ln -s -f "$INSTALL_PATH/.zshrc" "$HOME/.zshrc"
 ln -s -f "$INSTALL_PATH/submodules/timelapse-deflicker/timelapse-deflicker.pl" "$INSTALL_PATH/bin/scripts/timelapse-deflicker.pl"
+echo "Done"
 
-if [[ -d "$HOME/.oh-my-zsh" ]]; then
+echo -n "Looking for sublime..."
+if [[ "$OSTYPE" == 'linux-gnu' ]]; then SUBL_PATH=$(command -v subl3)
+elif [[ "$OSTYPE" == 'darwin'* ]]; then SUBL_PATH=$(find /Applications -type f -name subl); fi
+echo "Done"
+
+if [[ -z "$SUBL_PATH" ]]; then
+  echo "Could not link sublime because it was not found."
+else
+  echo -n "Linking sublime..."
+  ln -s -f "$SUBL_PATH" "$HOME/bin/subl"
+  echo "Done"
+fi
+
+if [[ -d "$ZSH" ]]; then
   echo "Oh My Zsh is already installed."
 else
   echo "Installing Oh My Zsh..."
@@ -70,19 +86,6 @@ else
   sh "$HOME/.vim_runtime/install_awesome_vimrc.sh"
 fi
 
-if [[ "$OSTYPE" == 'linux-gnu' ]]; then
-  SUBL_PATH=$(command -v subl3)
-elif [[ "$OSTYPE" == 'darwin'* ]]; then
-  SUBL_PATH=$(find /Applications -type f -name subl)
-fi
-
-if [[ -z "$SUBL_PATH" ]]; then
-  echo "Could not link sublime because it was not found."
-else
-  echo "Linking sublime..."
-  ln -s "$SUBL_PATH" "$HOME/bin/subl"
-fi
-
 if [[ -f "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh" ]]; then
   echo "Custom paths is already installed."
 else
@@ -91,4 +94,4 @@ else
   cp "$INSTALL_PATH/custom-paths.sh" "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh"
 fi
 
-echo "Done!"
+echo "All Done!"
