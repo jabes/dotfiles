@@ -12,13 +12,10 @@ function multi_arch_install() {
     echo "Package '$PACKAGE' is already installed."
   else
     if [[ "$OSTYPE" == 'linux-gnu' ]]; then
-      if hash "apt" 2>/dev/null; then apt install --assume-yes "$PACKAGE"
-      elif hash "pacman" 2>/dev/null; then pacman --noconfirm --sync "$PACKAGE"
-      elif hash "pkg" 2>/dev/null; then pkg install --yes "$PACKAGE"
-      elif hash "apk" 2>/dev/null; then apk add "$PACKAGE"
-      elif hash "yum" 2>/dev/null; then yum install --assumeyes "$PACKAGE"
+      if hash "apt" 2>/dev/null; then sudo apt install --assume-yes "$PACKAGE"
+      elif hash "pacman" 2>/dev/null; then sudo pacman --noconfirm --sync "$PACKAGE"
       else
-        echo "Unable to install '$PACKAGE', aborting."
+        echo "Unable to install package '$PACKAGE', aborting."
         exit
       fi
     elif [[ "$OSTYPE" == 'darwin'* ]]; then
@@ -33,11 +30,47 @@ function multi_arch_install() {
   fi
 }
 
+function multi_arch_channel_install() {
+  local GPG_KEY_URL="$1"
+  local GPG_KEY_ID="$2"
+  local SOURCE_NAME="$3"
+  local SOURCE_REPOSITORY_URL="$4"
+  local SOURCE_DISTRIBUTION="$5"
+  if [[ "$OSTYPE" == 'linux-gnu' ]]; then
+    if hash "apt" 2>/dev/null; then
+      multi_arch_install "apt-transport-https"
+      multi_arch_install "ca-certificates"
+      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo apt-key add -
+      echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "/etc/apt/sources.list.d/$SOURCE_NAME.list"
+      sudo apt update
+    elif hash "pacman" 2>/dev/null; then
+      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo pacman-key --add - && sudo pacman-key --lsign-key "$GPG_KEY_ID"
+      echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf
+      sudo pacman --sync --refresh
+    else
+      echo "Unable to add repository '$SOURCE_REPOSITORY_URL', aborting."
+      exit
+    fi
+  fi
+}
+
 # Install dependencies
+multi_arch_install "curl"
 multi_arch_install "git"
 multi_arch_install "zsh"
 multi_arch_install "vim"
 multi_arch_install "diff-so-fancy"
+
+# Install channels
+multi_arch_channel_install \
+  "https://download.sublimetext.com/sublimehq-pub.gpg" \
+  "8A8F901A" \
+  "sublime-text" \
+  "https://download.sublimetext.com/" \
+  "stable"
+
+# Install sublime text
+multi_arch_install "sublime-text"
 
 if [[ -d "$INSTALL_PATH" ]]; then
   echo "Dotfiles repo is already cloned."

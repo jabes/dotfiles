@@ -5,8 +5,9 @@ This is a cross platform (osx/linux) environment setup for developers.
 It will install and configure the following:
 - [Git](https://git-scm.com/)
 - [Brew](https://brew.sh/)
+- [Sublime](https://www.sublimetext.com/)
 - [oh-my-zsh](https://ohmyz.sh/)
-- [awesome-vimrc](https://github.com/amix/vimrc)
+- [awesome-vim](https://github.com/amix/vimrc)
 - [diff-so-fancy](https://github.com/so-fancy/diff-so-fancy)
 
 It will also install several scripts that can be used on a command line:
