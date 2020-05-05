@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# A simple script to backup an organization's GitHub repositories.
 
+# A simple script to backup an organization's GitHub repositories.
 function github-backup() {
   local GHBU_BACKUP_DIR=${GHBU_BACKUP_DIR-"$HOME/CloudStation/Repositories"}       # where to place the backup files
   local GHBU_UNAME=${GHBU_UNAME-"jabes"}                                           # the username of a GitHub account (to use with the GitHub API)
