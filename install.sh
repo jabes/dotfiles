@@ -37,6 +37,7 @@ function multi_arch_install() {
 multi_arch_install "git"
 multi_arch_install "zsh"
 multi_arch_install "vim"
+multi_arch_install "diff-so-fancy"
 
 if [[ -d "$INSTALL_PATH" ]]; then
   echo "Dotfiles repo is already cloned."
@@ -92,6 +93,25 @@ else
   echo "Creating custom paths..."
   mkdir -p "$LOCAL_BIN_SCRIPTS_PATH"
   cp "$INSTALL_PATH/custom-paths.sh" "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh"
+fi
+
+GIT_CORE_PAGER="diff-so-fancy | less --tabs=4 -RFX"
+if [[ "$(git config --global core.pager)" == "$GIT_CORE_PAGER" ]]; then
+  echo "Git is already configured to use good-lookin diffs."
+else
+  git config --global core.pager "$GIT_CORE_PAGER"
+  # Improved colors for the highlighted bits
+  git config --global color.ui true
+  git config --global color.diff-highlight.oldNormal "red bold"
+  git config --global color.diff-highlight.oldHighlight "red bold 52"
+  git config --global color.diff-highlight.newNormal "green bold"
+  git config --global color.diff-highlight.newHighlight "green bold 22"
+  git config --global color.diff.meta "11"
+  git config --global color.diff.frag "magenta bold"
+  git config --global color.diff.commit "yellow bold"
+  git config --global color.diff.old "red bold"
+  git config --global color.diff.new "green bold"
+  git config --global color.diff.whitespace "red reverse"
 fi
 
 echo "All Done!"

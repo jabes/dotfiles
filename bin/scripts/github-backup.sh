@@ -2,12 +2,12 @@
 
 # A simple script to backup an organization's GitHub repositories.
 function github-backup() {
-  local GHBU_BACKUP_DIR=${GHBU_BACKUP_DIR-"$HOME/CloudStation/Repositories"}       # where to place the backup files
-  local GHBU_UNAME=${GHBU_UNAME-"jabes"}                                           # the username of a GitHub account (to use with the GitHub API)
-  local GHBU_GITHOST=${GHBU_GITHOST-"github.com"}                                  # the GitHub hostname (see comments)
-  local GHBU_API=${GHBU_API-"https://api.github.com/user/repos?affiliation=owner"} # base URI for the GitHub API
-  local GHBU_PRUNE_OLD=${GHBU_PRUNE_OLD-true}                                      # when `true`, old backups will be deleted
-  local GHBU_PRUNE_AFTER_N_DAYS=${GHBU_PRUNE_AFTER_N_DAYS-3}                       # the min age (in days) of backup files to delete
+  local GHBU_BACKUP_DIR=${1:-"$HOME/CloudStation/Repositories"}              # where to place the backup files
+  local GHBU_UNAME=${2:-"jabes"}                                             # the username of a GitHub account (to use with the GitHub API)
+  local GHBU_GITHOST=${3:-"github.com"}                                      # the GitHub hostname (see comments)
+  local GHBU_API=${4:-"https://api.github.com/user/repos?affiliation=owner"} # base URI for the GitHub API
+  local GHBU_PRUNE_OLD=${5:-true}                                            # when `true`, old backups will be deleted
+  local GHBU_PRUNE_AFTER_N_DAYS=${6:-3}                                      # the min age (in days) of backup files to delete
 
   # Define local vars
   local RESPONSE
