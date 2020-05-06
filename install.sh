@@ -57,11 +57,12 @@ function multi_arch_channel_install() {
   if [[ "$OSTYPE" == 'linux-gnu' ]]; then
     echo -n "Adding '$SOURCE_NAME' repository..."
     if hash "apt" 2>/dev/null; then
-      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo apt-key add -
+      export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
+      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo apt-key add - 1>/dev/null
       echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "/etc/apt/sources.list.d/$SOURCE_NAME.list" 1>/dev/null
       run_process_in_background "sudo apt update"
     elif hash "pacman" 2>/dev/null; then
-      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo pacman-key --add -
+      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo pacman-key --add - 1>/dev/null
       sudo pacman-key --lsign-key "$GPG_KEY_ID" 1>/dev/null
       echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf 1>/dev/null
       run_process_in_background "sudo pacman --sync --refresh"
@@ -111,17 +112,17 @@ ln -s -f "$INSTALL_PATH/.zshrc" "$HOME/.zshrc"
 ln -s -f "$INSTALL_PATH/submodules/timelapse-deflicker/timelapse-deflicker.pl" "$INSTALL_PATH/bin/scripts/timelapse-deflicker.pl"
 echo "Done"
 
-echo -n "Looking for sublime..."
-if [[ "$OSTYPE" == 'linux-gnu' ]]; then SUBL_PATH=$(command -v subl3)
-elif [[ "$OSTYPE" == 'darwin'* ]]; then SUBL_PATH=$(find /Applications -type f -name subl); fi
-echo "Done"
-
-if [[ -z "$SUBL_PATH" ]]; then
-  echo "Could not link sublime because it was not found."
-else
-  echo -n "Linking sublime..."
-  ln -s -f "$SUBL_PATH" "$HOME/bin/subl"
+if [[ "$OSTYPE" == 'darwin'* ]]; then
+  echo -n "Looking for sublime..."
+  SUBL_PATH=$(find /Applications -type f -name subl);
   echo "Done"
+  if [[ -z "$SUBL_PATH" ]]; then
+    echo "Could not link sublime because it was not found."
+  else
+    echo -n "Linking sublime..."
+    ln -s -f "$SUBL_PATH" "$HOME/bin/subl"
+    echo "Done"
+  fi
 fi
 
 if [[ -d "$ZSH" ]]; then
