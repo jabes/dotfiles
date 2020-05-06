@@ -10,10 +10,10 @@ function run_process_in_background() {
   local CMD_STRING="$1"
   local PID
   PID=$(
-    nohup sh -c "$CMD_STRING" >/dev/null 2>&1 &
+    nohup sh -c "$CMD_STRING" >/dev/null &
     echo $!
   )
-  while ps -p "$PID" >/dev/null 2>&1; do
+  while ps -p "$PID" >/dev/null; do
     echo -n "."
     sleep 1
   done
@@ -26,8 +26,10 @@ function multi_arch_install() {
   else
     if [[ "$OSTYPE" == 'linux-gnu' ]]; then
       echo -n "Installing '$PACKAGE' package..."
-      if hash "apt" 2>/dev/null; then run_process_in_background "sudo apt install --assume-yes $PACKAGE"
-      elif hash "pacman" 2>/dev/null; then run_process_in_background "sudo pacman --noconfirm --sync $PACKAGE"
+      if hash "apt" 2>/dev/null; then
+        run_process_in_background "sudo apt install --assume-yes $PACKAGE"
+      elif hash "pacman" 2>/dev/null; then
+        run_process_in_background "sudo pacman --noconfirm --sync $PACKAGE"
       else
         echo
         echo "Unable to install package '$PACKAGE', aborting."
@@ -36,9 +38,25 @@ function multi_arch_install() {
       echo "Done"
     elif [[ "$OSTYPE" == 'darwin'* ]]; then
       if hash "brew" 2>/dev/null; then
-        echo -n "Installing '$PACKAGE' package..."
-        run_process_in_background "brew install $PACKAGE"
-        echo "Done"
+        if [[ -n "$(brew cask info "$PACKAGE" 2>/dev/null)" ]]; then
+          if [[ -z "$(brew cask list "$PACKAGE" 2>/dev/null)" ]]; then
+            echo -n "Installing '$PACKAGE' cask..."
+            run_process_in_background "brew cask install $PACKAGE"
+            echo "Done"
+          else
+            echo "Cask '$PACKAGE' is already installed."
+          fi
+        elif [[ -n "$(brew info --json "$PACKAGE" 2>/dev/null)" ]]; then
+          if [[ -z "$(brew list "$PACKAGE" 2>/dev/null)" ]]; then
+            echo -n "Installing '$PACKAGE' formula..."
+            run_process_in_background "brew install $PACKAGE"
+            echo "Done"
+          else
+            echo "Formula '$PACKAGE' is already installed."
+          fi
+        else
+          echo "Could not find '$PACKAGE' package."
+        fi
       else
         echo "Installing Homebrew..."
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
@@ -60,7 +78,7 @@ function multi_arch_channel_install() {
     echo -n "Adding '$SOURCE_NAME' repository..."
     if hash "apt" 2>/dev/null; then
       curl --fail --silent --show-error --location "$GPG_KEY_URL" --output "/tmp/$SOURCE_NAME.gpg"
-      gpg --dearmor < "/tmp/$SOURCE_NAME.gpg" | sudo tee "/etc/apt/trusted.gpg.d/$SOURCE_NAME.gpg" 1>/dev/null
+      gpg --dearmor <"/tmp/$SOURCE_NAME.gpg" | sudo tee "/etc/apt/trusted.gpg.d/$SOURCE_NAME.gpg" 1>/dev/null
       echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "/etc/apt/sources.list.d/$SOURCE_NAME.list" 1>/dev/null
       run_process_in_background "sudo apt update"
     elif hash "pacman" 2>/dev/null; then
@@ -115,7 +133,7 @@ echo "Done"
 
 if [[ "$OSTYPE" == 'darwin'* ]]; then
   echo -n "Looking for sublime..."
-  SUBL_PATH=$(find /Applications -type f -name subl);
+  SUBL_PATH=$(find /Applications -type f -name subl)
   echo "Done"
   if [[ -z "$SUBL_PATH" ]]; then
     echo "Could not link sublime because it was not found."
