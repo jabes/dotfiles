@@ -58,7 +58,7 @@ function multi_arch_channel_install() {
     echo -n "Adding '$SOURCE_NAME' repository..."
     if hash "apt" 2>/dev/null; then
       curl --fail --silent --show-error --location "$GPG_KEY_URL" --output "/tmp/$SOURCE_NAME.gpg"
-      sudo cat "/tmp/$SOURCE_NAME.gpg" | gpg --dearmor > "/etc/apt/trusted.gpg.d/$SOURCE_NAME.gpg" 1>/dev/null
+      gpg --dearmor < "/tmp/$SOURCE_NAME.gpg" | sudo tee "/etc/apt/trusted.gpg.d/$SOURCE_NAME.gpg" 1>/dev/null
       echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "/etc/apt/sources.list.d/$SOURCE_NAME.list" 1>/dev/null
       run_process_in_background "sudo apt update"
     elif hash "pacman" 2>/dev/null; then
