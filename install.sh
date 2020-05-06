@@ -6,17 +6,137 @@ LOCAL_BIN_SCRIPTS_PATH="$HOME/bin/scripts"
 ZSH="$HOME/.oh-my-zsh"
 ZSH_CUSTOM="$ZSH/custom"
 
-function run_process_in_background() {
-  local CMD_STRING="$1"
-  local PID
-  PID=$(
-    nohup sh -c "$CMD_STRING" >/dev/null &
-    echo $!
-  )
+function abort() {
+  exit 1
+}
+
+function wait_for_process_to_finish() {
+  local PID="$1"
   while ps -p "$PID" >/dev/null; do
     echo -n "."
     sleep 1
   done
+}
+
+function run_process_in_background() {
+  local CMD_STRING="$1"
+  nohup sh -c "$CMD_STRING" >/dev/null 2>&1 &
+  wait_for_process_to_finish "$!"
+}
+
+function run_sudo_process_in_background() {
+  local CMD_STRING="$1"
+  nohup sudo sh -c "$CMD_STRING" >/dev/null 2>&1 &
+  wait_for_process_to_finish "$!"
+}
+
+function download() {
+  local LOCATION="$1"
+  local OUTPUT="$2"
+  # Define output path if not specified
+  if [[ -z "$OUTPUT" ]]; then
+    OUTPUT="/tmp/$(date +%s)_$(basename "$LOCATION")"
+  fi
+  # Download file to defined output path
+  curl --fail \
+    --silent \
+    --show-error \
+    --location "$LOCATION" \
+    --output "$OUTPUT"
+  # Return output path
+  echo "$OUTPUT"
+}
+
+function download_and_run() {
+  run_process_in_background "source $(download "$1")"
+}
+
+function npm_install_global_package() {
+  local PACKAGE="$1"
+  if [[ -z "$(npm view "$PACKAGE" 2>/dev/null)" ]]; then
+    echo -n "Installing '$PACKAGE' as global NPM package..."
+    run_process_in_background "npm install --global $PACKAGE"
+    if [[ -n "$(npm view "$PACKAGE" 2>/dev/null)" ]]; then
+      echo "Success"
+    else
+      echo
+      echo "Failed to install package."
+      abort
+    fi
+  else
+    echo "NPM already has '$PACKAGE' installed."
+  fi
+}
+
+function is_not_empty() {
+  if [[ -n "$1" ]]; then echo "yes"; else echo "no"; fi
+}
+
+function is_brew_package_cask() {
+  is_not_empty "$(brew cask info "$1" 2>/dev/null)"
+}
+
+function is_brew_package_formula() {
+  is_not_empty "$(brew info --json "$1" 2>/dev/null)"
+}
+
+function is_brew_cask_installed() {
+  is_not_empty "$(brew cask list "$1" 2>/dev/null)"
+}
+
+function is_brew_formula_installed() {
+  is_not_empty "$(brew list "$1" 2>/dev/null)"
+}
+
+function brew_install_cask() {
+  if [[ "$(is_brew_cask_installed "$PACKAGE")" == "no" ]]; then
+    echo -n "Installing brew cask '$PACKAGE' now..."
+    run_process_in_background "brew cask install $PACKAGE"
+    if [[ "$(is_brew_cask_installed "$PACKAGE")" == "yes" ]]; then
+      echo "Success"
+    else
+      echo
+      echo "Failed to install cask, aborting."
+      abort
+    fi
+  else
+    echo "Brew cask '$PACKAGE' is already installed."
+  fi
+}
+
+function brew_install_formula() {
+  if [[ "$(is_brew_formula_installed "$PACKAGE")" == "no" ]]; then
+    echo -n "Installing brew formula '$PACKAGE' now..."
+    run_process_in_background "brew install $PACKAGE"
+    if [[ "$(is_brew_formula_installed "$PACKAGE")" == "yes" ]]; then
+      echo "Success"
+    else
+      echo
+      echo "Failed to install formula, aborting."
+      abort
+    fi
+  else
+    echo "Brew formula '$PACKAGE' is already installed."
+  fi
+}
+
+function brew_install() {
+  PACKAGE="$1"
+  if hash "brew" 2>/dev/null; then
+    if [[ "$(is_brew_package_formula "$PACKAGE")" == "yes" ]]; then
+      brew_install_formula "$PACKAGE"
+    elif [[ "$(is_brew_package_cask "$PACKAGE")" == "yes" ]]; then
+      brew_install_cask "$PACKAGE"
+    else
+      echo "Could not find package '$PACKAGE' in brew repo, aborting."
+      abort
+    fi
+  else
+    echo -n "Installing Homebrew..."
+    download_and_run https://raw.githubusercontent.com/Homebrew/install/master/install.sh
+    echo "Done"
+    brew_install "$PACKAGE"
+  fi
 }
 
 function multi_arch_install() {
@@ -27,46 +147,23 @@ function multi_arch_install() {
     if [[ "$OSTYPE" == 'linux-gnu' ]]; then
       echo -n "Installing '$PACKAGE' package..."
       if hash "apt" 2>/dev/null; then
-        run_process_in_background "sudo apt install --assume-yes $PACKAGE"
+        run_sudo_process_in_background "apt install --assume-yes $PACKAGE"
       elif hash "pacman" 2>/dev/null; then
-        run_process_in_background "sudo pacman --noconfirm --sync $PACKAGE"
+        run_sudo_process_in_background "pacman --noconfirm --sync $PACKAGE"
       else
         echo
         echo "Unable to install package '$PACKAGE', aborting."
-        exit
+        abort
       fi
-      echo "Done"
+      echo "Success"
     elif [[ "$OSTYPE" == 'darwin'* ]]; then
-      if hash "brew" 2>/dev/null; then
-        if [[ -n "$(brew cask info "$PACKAGE" 2>/dev/null)" ]]; then
-          if [[ -z "$(brew cask list "$PACKAGE" 2>/dev/null)" ]]; then
-            echo -n "Installing '$PACKAGE' cask..."
-            run_process_in_background "brew cask install $PACKAGE"
-            echo "Done"
-          else
-            echo "Cask '$PACKAGE' is already installed."
-          fi
-        elif [[ -n "$(brew info --json "$PACKAGE" 2>/dev/null)" ]]; then
-          if [[ -z "$(brew list "$PACKAGE" 2>/dev/null)" ]]; then
-            echo -n "Installing '$PACKAGE' formula..."
-            run_process_in_background "brew install $PACKAGE"
-            echo "Done"
-          else
-            echo "Formula '$PACKAGE' is already installed."
-          fi
-        else
-          echo "Could not find '$PACKAGE' package."
-        fi
-      else
-        echo "Installing Homebrew..."
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-        multi_arch_install "$PACKAGE"
-      fi
+      brew_install "$PACKAGE"
     fi
   fi
 }
 
 function multi_arch_channel_install() {
+  local GPG_KEY_PATH
   local GPG_KEY_URL="$1"
   local GPG_KEY_ID="$2"
   local SOURCE_NAME="$3"
@@ -75,37 +172,41 @@ function multi_arch_channel_install() {
   if [[ "$OSTYPE" == 'linux-gnu' ]]; then
     multi_arch_install "apt-transport-https"
     multi_arch_install "ca-certificates"
+    # Download public key
+    echo -n "Downloading '$SOURCE_NAME' gpg key..."
+    GPG_KEY_PATH=$(download "$GPG_KEY_URL")
+    echo "Done"
+    # Add repository to package manager
     echo -n "Adding '$SOURCE_NAME' repository..."
     if hash "apt" 2>/dev/null; then
-      curl --fail --silent --show-error --location "$GPG_KEY_URL" --output "/tmp/$SOURCE_NAME.gpg"
-      gpg --dearmor <"/tmp/$SOURCE_NAME.gpg" | sudo tee "/etc/apt/trusted.gpg.d/$SOURCE_NAME.gpg" 1>/dev/null
+      gpg --dearmor <"$GPG_KEY_PATH" | sudo tee "/etc/apt/trusted.gpg.d/$SOURCE_NAME.gpg" 1>/dev/null
       echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "/etc/apt/sources.list.d/$SOURCE_NAME.list" 1>/dev/null
-      run_process_in_background "sudo apt update"
+      run_sudo_process_in_background "apt update"
     elif hash "pacman" 2>/dev/null; then
-      curl --fail --silent --show-error --location "$GPG_KEY_URL" --output "/tmp/$SOURCE_NAME.gpg"
-      sudo pacman-key --add "/tmp/$SOURCE_NAME.gpg" 1>/dev/null
+      sudo pacman-key --add "$GPG_KEY_PATH" 1>/dev/null
       sudo pacman-key --lsign-key "$GPG_KEY_ID" 1>/dev/null
       echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf 1>/dev/null
-      run_process_in_background "sudo pacman --sync --refresh"
+      run_sudo_process_in_background "pacman --sync --refresh"
     else
       echo
       echo "Unable to add repository '$SOURCE_REPOSITORY_URL', aborting."
-      exit
+      abort
     fi
-    echo "Done"
+    echo "Success"
   fi
 }
 
 # add_user_to_sudoers
-USER="$(whoami)"
+echo -n "Adding user '$USER' to sudoers..."
 echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/$USER" 1>/dev/null
+echo "Done"
 
 # Install dependencies
 multi_arch_install "curl"
 multi_arch_install "git"
 multi_arch_install "zsh"
 multi_arch_install "vim"
-multi_arch_install "diff-so-fancy"
+multi_arch_install "npm"
 
 # Install channels
 multi_arch_channel_install \
@@ -121,16 +222,21 @@ multi_arch_install "sublime-text"
 if [[ -d "$INSTALL_PATH" ]]; then
   echo "Dotfiles repo is already cloned."
 else
-  echo "Cloning Dotfiles repo..."
-  git clone --recurse-submodules -j8 "$REPO_URL" "$INSTALL_PATH"
+  echo -n "Cloning Dotfiles repo..."
+  git clone --quiet --recurse-submodules -j8 "$REPO_URL" "$INSTALL_PATH"
+  echo "Done"
 fi
 
+# Link dotfiles to user home directory
 echo -n "Linking files..."
 ln -s -f "$INSTALL_PATH/.npmrc" "$HOME/.npmrc"
 ln -s -f "$INSTALL_PATH/.zshrc" "$HOME/.zshrc"
-ln -s -f "$INSTALL_PATH/submodules/timelapse-deflicker/timelapse-deflicker.pl" "$INSTALL_PATH/bin/scripts/timelapse-deflicker.pl"
+ln -s -f \
+  "$INSTALL_PATH/submodules/timelapse-deflicker/timelapse-deflicker.pl" \
+  "$LOCAL_BIN_SCRIPTS_PATH/timelapse-deflicker.pl"
 echo "Done"
 
+# Link sublime on OSX
 if [[ "$OSTYPE" == 'darwin'* ]]; then
   echo -n "Looking for sublime..."
   SUBL_PATH=$(find /Applications -type f -name subl)
@@ -144,28 +250,33 @@ if [[ "$OSTYPE" == 'darwin'* ]]; then
   fi
 fi
 
+# Install Oh My Zsh
 if [[ -d "$ZSH" ]]; then
   echo "Oh My Zsh is already installed."
 else
-  echo "Installing Oh My Zsh..."
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  echo -n "Installing Oh My Zsh..."
+  download_and_run https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
+  echo "Done"
 fi
 
+# Install ZSH Autosuggestions Plugin
 if [[ -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]]; then
   echo "ZSH Autosuggestions plugin is already installed."
 else
   echo "Installing ZSH Autosuggestions plugin..."
-  git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+  git clone --depth=1 --quiet https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 fi
 
+# Install Vim configuration
 if [[ -d "$HOME/.vim_runtime" ]]; then
   echo "Vim configuration is already installed."
 else
   echo "Installing Vim configuration..."
-  git clone --depth=1 https://github.com/amix/vimrc.git "$HOME/.vim_runtime"
+  git clone --depth=1 --quiet https://github.com/amix/vimrc.git "$HOME/.vim_runtime"
   sh "$HOME/.vim_runtime/install_awesome_vimrc.sh"
 fi
 
+# Copy custom paths script to user bin directory
 if [[ -f "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh" ]]; then
   echo "Custom paths is already installed."
 else
@@ -174,6 +285,14 @@ else
   cp "$INSTALL_PATH/custom-paths.sh" "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh"
 fi
 
+# Install GNU utils on OSX
+# These also get aliased in bin/scripts/gnu-utils-alias.sh
+if [[ "$OSTYPE" == 'darwin'* ]]; then
+  brew_install "coreutils"
+fi
+
+# Install diff-so-fancy and configure git to use it by default for diffs
+npm_install_global_package "diff-so-fancy"
 GIT_CORE_PAGER="diff-so-fancy | less --tabs=4 -RFX"
 if [[ "$(git config --global core.pager)" == "$GIT_CORE_PAGER" ]]; then
   echo "Git is already configured to use good-lookin diffs."

@@ -4,7 +4,7 @@
 function search-file-contents() {
   local FILE="$1"
   if [[ -z "$FILE" ]]; then
-    echo "You must provide a file to search."
+    echo "You must provide a file or directory to search."
     return 0
   fi
 
@@ -14,9 +14,9 @@ function search-file-contents() {
     return 0
   fi
 
-  if [[ -f "$FILE" ]]; then
+  if [[ -f "$FILE" ]] || [[ -d "$FILE" ]]; then
     grep --recursive --line-number --word-regexp "$FILE" --regexp="$SEARCH"
   else
-    echo "File not found: '$FILE'"
+    echo "File or directory not found: '$FILE'"
   fi
 }
