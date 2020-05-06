@@ -57,12 +57,12 @@ function multi_arch_channel_install() {
   if [[ "$OSTYPE" == 'linux-gnu' ]]; then
     echo -n "Adding '$SOURCE_NAME' repository..."
     if hash "apt" 2>/dev/null; then
-      export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
-      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo apt-key add - 1>/dev/null
+      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo tee "/etc/apt/trusted.gpg.d/$SOURCE_NAME.gpg" 1>/dev/null
       echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "/etc/apt/sources.list.d/$SOURCE_NAME.list" 1>/dev/null
       run_process_in_background "sudo apt update"
     elif hash "pacman" 2>/dev/null; then
-      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo pacman-key --add - 1>/dev/null
+      curl --fail --silent --show-error --location "$GPG_KEY_URL" --output "/tmp/$SOURCE_NAME.gpg"
+      sudo pacman-key --add "/tmp/$SOURCE_NAME.gpg" 1>/dev/null
       sudo pacman-key --lsign-key "$GPG_KEY_ID" 1>/dev/null
       echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf 1>/dev/null
       run_process_in_background "sudo pacman --sync --refresh"
