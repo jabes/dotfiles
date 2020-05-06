@@ -51,23 +51,6 @@ function download_and_run() {
   run_process_in_background "source $(download "$1")"
 }
 
-function npm_install_global_package() {
-  local PACKAGE="$1"
-  if [[ -z "$(npm view "$PACKAGE" 2>/dev/null)" ]]; then
-    echo -n "Installing '$PACKAGE' as global NPM package..."
-    run_process_in_background "npm install --global $PACKAGE"
-    if [[ -n "$(npm view "$PACKAGE" 2>/dev/null)" ]]; then
-      echo "Success"
-    else
-      echo
-      echo "Failed to install package."
-      abort
-    fi
-  else
-    echo "NPM already has '$PACKAGE' installed."
-  fi
-}
-
 function is_not_empty() {
   if [[ -n "$1" ]]; then echo "yes"; else echo "no"; fi
 }
@@ -136,6 +119,27 @@ function brew_install() {
     download_and_run https://raw.githubusercontent.com/Homebrew/install/master/install.sh
     echo "Done"
     brew_install "$PACKAGE"
+  fi
+}
+
+function is_npm_package_installed() {
+  is_not_empty "$(npm list --global "$PACKAGE" | grep "$PACKAGE")"
+}
+
+function npm_install_global_package() {
+  local PACKAGE="$1"
+  if [[ "$(is_npm_package_installed "$PACKAGE")" == "no" ]]; then
+    echo -n "Installing '$PACKAGE' as global NPM package..."
+    run_process_in_background "npm install --global $PACKAGE"
+    if [[ "$(is_npm_package_installed "$PACKAGE")" == "yes" ]]; then
+      echo "Success"
+    else
+      echo
+      echo "Failed to install package."
+      abort
+    fi
+  else
+    echo "NPM already has '$PACKAGE' installed."
   fi
 }
 
