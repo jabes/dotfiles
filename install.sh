@@ -57,14 +57,13 @@ function multi_arch_channel_install() {
   if [[ "$OSTYPE" == 'linux-gnu' ]]; then
     echo -n "Adding '$SOURCE_NAME' repository..."
     if hash "apt" 2>/dev/null; then
-      multi_arch_install "apt-transport-https"
-      multi_arch_install "ca-certificates"
-      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo apt-key add -
-      echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "/etc/apt/sources.list.d/$SOURCE_NAME.list"
+      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo apt-key add - 1>/dev/null
+      echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "/etc/apt/sources.list.d/$SOURCE_NAME.list" 1>/dev/null
       run_process_in_background "sudo apt update"
     elif hash "pacman" 2>/dev/null; then
-      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo pacman-key --add - && sudo pacman-key --lsign-key "$GPG_KEY_ID"
-      echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf
+      curl --fail --silent --show-error --location "$GPG_KEY_URL" | sudo pacman-key --add - 1>/dev/null
+      sudo pacman-key --lsign-key "$GPG_KEY_ID" 1>/dev/null
+      echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf 1>/dev/null
       run_process_in_background "sudo pacman --sync --refresh"
     else
       echo
@@ -75,6 +74,10 @@ function multi_arch_channel_install() {
   fi
 }
 
+# add_user_to_sudoers
+USER="$(whoami)"
+echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/$USER" 1>/dev/null
+
 # Install dependencies
 multi_arch_install "curl"
 multi_arch_install "git"
@@ -83,6 +86,8 @@ multi_arch_install "vim"
 multi_arch_install "diff-so-fancy"
 
 # Install channels
+multi_arch_install "apt-transport-https"
+multi_arch_install "ca-certificates"
 multi_arch_channel_install \
   "https://download.sublimetext.com/sublimehq-pub.gpg" \
   "8A8F901A" \
@@ -169,3 +174,5 @@ else
 fi
 
 echo "All Done!"
+
+}
