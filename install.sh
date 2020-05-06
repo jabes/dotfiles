@@ -7,7 +7,7 @@ ZSH="$HOME/.oh-my-zsh"
 ZSH_CUSTOM="$ZSH/custom"
 
 function run_process_in_background() {
-  local CMD_STRING="$2"
+  local CMD_STRING="$1"
   local PID
   PID=$(
     nohup sh -c "$CMD_STRING" >/dev/null 2>&1 &
@@ -36,7 +36,7 @@ function multi_arch_install() {
       echo "Done"
     elif [[ "$OSTYPE" == 'darwin'* ]]; then
       if hash "brew" 2>/dev/null; then
-        echo -n "Installing '$PACKAGE' package"
+        echo -n "Installing '$PACKAGE' package..."
         run_process_in_background "brew install $PACKAGE"
         echo "Done"
       else
@@ -55,6 +55,8 @@ function multi_arch_channel_install() {
   local SOURCE_REPOSITORY_URL="$4"
   local SOURCE_DISTRIBUTION="$5"
   if [[ "$OSTYPE" == 'linux-gnu' ]]; then
+    multi_arch_install "apt-transport-https"
+    multi_arch_install "ca-certificates"
     echo -n "Adding '$SOURCE_NAME' repository..."
     if hash "apt" 2>/dev/null; then
       curl --fail --silent --show-error --location "$GPG_KEY_URL" --output "/tmp/$SOURCE_NAME.gpg"
@@ -88,8 +90,6 @@ multi_arch_install "vim"
 multi_arch_install "diff-so-fancy"
 
 # Install channels
-multi_arch_install "apt-transport-https"
-multi_arch_install "ca-certificates"
 multi_arch_channel_install \
   "https://download.sublimetext.com/sublimehq-pub.gpg" \
   "8A8F901A" \
