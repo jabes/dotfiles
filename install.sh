@@ -146,7 +146,7 @@ function npm_install_global_package() {
       echo "Success"
     else
       echo
-      echo "Failed to install package."
+      echo "Failed to install package, aborting."
       abort
     fi
   else
@@ -163,7 +163,7 @@ function install_apt_package() {
       echo "Success"
     else
       echo
-      echo "Failed to install package."
+      echo "Failed to install package, aborting."
       abort
     fi
   else
@@ -180,12 +180,30 @@ function install_pacman_package() {
       echo "Success"
     else
       echo
-      echo "Failed to install package."
+      echo "Failed to install package, aborting."
       abort
     fi
   else
     echo "Package '$PACKAGE' is already installed."
   fi
+}
+
+function multi_arch_update() {
+  echo -n "Updating package sources..."
+  if [[ "$OSTYPE" == 'linux-gnu' ]]; then
+    if hash "apt" 2>/dev/null; then
+      run_sudo_process_in_background "apt update --assume-yes"
+    elif hash "pacman" 2>/dev/null; then
+      run_sudo_process_in_background "pacman --noconfirm --sync --refresh"
+    else
+      echo
+      echo "Unrecognized package manager, aborting."
+      abort
+    fi
+  elif [[ "$OSTYPE" == 'darwin'* ]]; then
+    run_process_in_background "brew update"
+  fi
+  echo "Success"
 }
 
 function multi_arch_install() {
@@ -195,9 +213,6 @@ function multi_arch_install() {
       install_apt_package "$PACKAGE"
     elif hash "pacman" 2>/dev/null; then
       install_pacman_package "$PACKAGE"
-    else
-      echo "Unrecognized package manager, aborting."
-      abort
     fi
   elif [[ "$OSTYPE" == 'darwin'* ]]; then
     brew_install "$PACKAGE"
@@ -222,8 +237,8 @@ function multi_arch_channel_install() {
         echo -n "Adding repository '$SOURCE_NAME' now..."
         gpg --dearmor <"$(download "$GPG_KEY_URL")" | sudo tee "$GPG_KEY_FILE" 1>/dev/null
         echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "$SOURCE_FILE" 1>/dev/null
-        run_sudo_process_in_background "apt update"
         echo "Success"
+        multi_arch_update
       fi
     elif hash "pacman" 2>/dev/null; then
       if grep --quiet "$SOURCE_NAME" /etc/pacman.conf; then
@@ -233,8 +248,8 @@ function multi_arch_channel_install() {
         sudo pacman-key --add "$(download "$GPG_KEY_URL")" 1>/dev/null
         sudo pacman-key --lsign-key "$GPG_KEY_ID" 1>/dev/null
         echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf 1>/dev/null
-        run_sudo_process_in_background "pacman --sync --refresh"
         echo "Success"
+        multi_arch_update
       fi
     else
       echo
@@ -255,6 +270,7 @@ echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/$USER" 1>/dev/nu
 echo "Done"
 
 # Install dependencies
+multi_arch_update
 multi_arch_install "curl"
 multi_arch_install "git"
 multi_arch_install "zsh"
