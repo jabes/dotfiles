@@ -346,24 +346,26 @@ else
   export RUNZSH=no
   export KEEP_ZSHRC=yes
   download_and_run https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
-  echo "Done"
+  echo "Success"
 fi
 
 # Install ZSH Autosuggestions Plugin
 if [[ -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]]; then
   echo "ZSH Autosuggestions plugin is already installed."
 else
-  echo "Installing ZSH Autosuggestions plugin..."
+  echo -n "Installing ZSH Autosuggestions plugin..."
   git clone --depth=1 --quiet https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+  echo "Success"
 fi
 
 # Install Vim configuration
 if [[ -d "$HOME/.vim_runtime" ]]; then
   echo "Vim configuration is already installed."
 else
-  echo "Installing Vim configuration..."
+  echo -n "Installing Vim configuration..."
   git clone --depth=1 --quiet https://github.com/amix/vimrc.git "$HOME/.vim_runtime"
   sh "$HOME/.vim_runtime/install_awesome_vimrc.sh" 1>/dev/null
+  echo "Success"
 fi
 
 # Install GNU utils on OSX
@@ -378,6 +380,7 @@ GIT_CORE_PAGER="diff-so-fancy | less --tabs=4 -RFX"
 if [[ "$(git config --global core.pager)" == "$GIT_CORE_PAGER" ]]; then
   echo "Git is already configured to use good-lookin diffs."
 else
+  echo -n "Configuring git to use diff-so-fancy by default..."
   git config --global core.pager "$GIT_CORE_PAGER"
   # Improved colors for the highlighted bits
   git config --global color.ui true
@@ -391,6 +394,7 @@ else
   git config --global color.diff.old "red bold"
   git config --global color.diff.new "green bold"
   git config --global color.diff.whitespace "red reverse"
+  echo "Done"
 fi
 
 # All Done!
