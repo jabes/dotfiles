@@ -57,31 +57,31 @@ function is_not_empty() {
 }
 
 function is_brew_package_cask() {
-  is_not_empty "$(brew cask info "$1" 2>/dev/null | grep "$1")"
+  is_not_empty "$(brew cask info "$1" 2>/dev/null)"
 }
 
 function is_brew_package_formula() {
-  is_not_empty "$(brew info "$1" 2>/dev/null | grep "$1")"
+  is_not_empty "$(brew info --json "$1" 2>/dev/null)"
 }
 
 function is_brew_cask_installed() {
-  is_not_empty "$(brew cask list "$1" 2>/dev/null | grep "$1")"
+  is_not_empty "$(brew cask list "$1" 2>/dev/null)"
 }
 
 function is_brew_formula_installed() {
-  is_not_empty "$(brew list "$1" 2>/dev/null | grep "$1")"
+  is_not_empty "$(brew list "$1" 2>/dev/null)"
 }
 
 function is_npm_package_installed() {
-  is_not_empty "$(npm list --global "$1" 2>/dev/null | grep "$1")"
+  is_not_empty "$(npm list --global 2>/dev/null | grep "$1")"
 }
 
 function is_apt_package_installed() {
-  is_not_empty "$(apt list --installed "$1" 2>/dev/null | grep "$1")"
+  is_not_empty "$(apt list --installed 2>/dev/null | grep "$1")"
 }
 
 function is_pacman_package_installed() {
-  is_not_empty "$(pacman --query "$1" 2>/dev/null | grep "$1")"
+  is_not_empty "$(pacman --query --explicit --unrequired 2>/dev/null | grep "$1")"
 }
 
 function brew_install_cask() {
@@ -275,7 +275,7 @@ multi_arch_install "curl"
 multi_arch_install "git"
 multi_arch_install "zsh"
 multi_arch_install "vim"
-multi_arch_install "npm"
+multi_arch_install "nodejs"
 
 # Install sublime text channel
 multi_arch_channel_install \
