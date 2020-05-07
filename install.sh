@@ -390,6 +390,8 @@ echo "All Done!"
 
 # Change shell
 if [[ "$(basename "$SHELL")" != "zsh" ]]; then
-  chsh -s "$(command -v zsh)"
+  SHELL="$(command -v zsh)"
+  export SHELL="$SHELL"
+  chsh -s "$SHELL"
   exec zsh --login
 fi
