@@ -236,7 +236,7 @@ function multi_arch_channel_install() {
       else
         echo -n "Adding repository '$SOURCE_NAME' now..."
         gpg --dearmor <"$(download "$GPG_KEY_URL")" | sudo tee "$GPG_KEY_FILE" 1>/dev/null
-        echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "$SOURCE_FILE" 1>/dev/null
+        echo "deb ${SOURCE_REPOSITORY_URL}/ apt/${SOURCE_DISTRIBUTION}/" | sudo tee "$SOURCE_FILE" 1>/dev/null
         echo "Success"
         multi_arch_update
       fi
@@ -282,7 +282,7 @@ multi_arch_channel_install \
   "https://download.sublimetext.com/sublimehq-pub.gpg" \
   "8A8F901A" \
   "sublime-text" \
-  "https://download.sublimetext.com/" \
+  "https://download.sublimetext.com" \
   "stable"
 
 # Install sublime text package
