@@ -386,7 +386,7 @@ fi
 echo "All Done!"
 
 # Change shell
-if [[ "$SHELL" != "zsh" ]]; then
+if [[ "$(basename "$SHELL")" != "zsh" ]]; then
   chsh -s "$(command -v zsh)"
   exec zsh --login
 fi
