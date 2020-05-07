@@ -49,7 +49,7 @@ function download() {
 }
 
 function download_and_run() {
-  run_process_in_background "source $(download "$1")"
+  run_process_in_background "sh $(download "$1")"
 }
 
 function is_not_empty() {
@@ -334,6 +334,9 @@ if [[ -d "$ZSH" ]]; then
   echo "Oh My Zsh is already installed."
 else
   echo -n "Installing Oh My Zsh..."
+  export CHSH=no
+  export RUNZSH=no
+  export KEEP_ZSHRC=yes
   download_and_run https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
   echo "Done"
 fi
