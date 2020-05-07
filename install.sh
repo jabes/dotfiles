@@ -81,7 +81,7 @@ function is_apt_package_installed() {
 }
 
 function is_pacman_package_installed() {
-  is_not_empty "$(pacman --query --explicit --unrequired 2>/dev/null | grep "$1")"
+  is_not_empty "$(pacman --query 2>/dev/null | grep "$1")"
 }
 
 function brew_install_cask() {
