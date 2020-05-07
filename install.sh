@@ -237,7 +237,7 @@ function multi_arch_channel_install() {
       fi
     else
       echo
-      echo "Unable to add repository '$SOURCE_REPOSITORY_URL', aborting."
+      echo "Unable to add repository '$SOURCE_NAME' due to unrecognized system architecture, aborting."
       abort
     fi
   fi
