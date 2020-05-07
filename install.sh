@@ -12,7 +12,7 @@ function abort() {
 
 function wait_for_process_to_finish() {
   local PID="$1"
-  while ps -p "$PID" >/dev/null; do
+  while ps -p "$PID" 1>/dev/null; do
     echo -n "."
     sleep 1
   done
@@ -20,13 +20,13 @@ function wait_for_process_to_finish() {
 
 function run_process_in_background() {
   local CMD_STRING="$1"
-  nohup sh -c "$CMD_STRING" >/dev/null 2>&1 &
+  nohup sh -c "$CMD_STRING" 1>/dev/null 2>&1 &
   wait_for_process_to_finish "$!"
 }
 
 function run_sudo_process_in_background() {
   local CMD_STRING="$1"
-  nohup sudo sh -c "$CMD_STRING" >/dev/null 2>&1 &
+  nohup sudo sh -c "$CMD_STRING" 1>/dev/null 2>&1 &
   wait_for_process_to_finish "$!"
 }
 
@@ -245,8 +245,8 @@ function multi_arch_channel_install() {
         echo "Repository '$SOURCE_NAME' is already added."
       else
         echo -n "Adding repository '$SOURCE_NAME' now..."
-        sudo pacman-key --add "$(download "$GPG_KEY_URL")" 1>/dev/null
-        sudo pacman-key --lsign-key "$GPG_KEY_ID" 1>/dev/null
+        sudo pacman-key --add "$(download "$GPG_KEY_URL")" 1>/dev/null 2>&1
+        sudo pacman-key --lsign-key "$GPG_KEY_ID" 1>/dev/null 2>&1
         echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf 1>/dev/null
         echo "Success"
         multi_arch_update
@@ -296,6 +296,16 @@ else
   echo "Done"
 fi
 
+# Copy custom paths script to user bin directory
+if [[ -f "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh" ]]; then
+  echo "Custom paths is already installed."
+else
+  echo -n "Creating custom paths..."
+  mkdir -p "$LOCAL_BIN_SCRIPTS_PATH"
+  cp "$INSTALL_PATH/custom-paths.sh" "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh"
+  echo "Done"
+fi
+
 # Link dotfiles to user home directory
 echo -n "Linking files..."
 ln -s -f "$INSTALL_PATH/.npmrc" "$HOME/.npmrc"
@@ -342,16 +352,7 @@ if [[ -d "$HOME/.vim_runtime" ]]; then
 else
   echo "Installing Vim configuration..."
   git clone --depth=1 --quiet https://github.com/amix/vimrc.git "$HOME/.vim_runtime"
-  sh "$HOME/.vim_runtime/install_awesome_vimrc.sh"
-fi
-
-# Copy custom paths script to user bin directory
-if [[ -f "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh" ]]; then
-  echo "Custom paths is already installed."
-else
-  echo "Creating custom paths..."
-  mkdir -p "$LOCAL_BIN_SCRIPTS_PATH"
-  cp "$INSTALL_PATH/custom-paths.sh" "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh"
+  sh "$HOME/.vim_runtime/install_awesome_vimrc.sh" 1>/dev/null
 fi
 
 # Install GNU utils on OSX
