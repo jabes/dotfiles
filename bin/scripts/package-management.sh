@@ -2,6 +2,8 @@
 # SC2016: Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
 
+# If a pattern for filename generation has no matches,
+# print an error instead of leaving it unchanged in the argument list.
 setopt +o nomatch
 
 function _color_code() { echo "\e[$1m"; }
@@ -48,17 +50,36 @@ function _remove_path_and_display_info() {
   echo "Items removed: $FILE_COUNT Total size: $CACHE_SIZE Path: $CACHE_PATH"
 }
 
+function _wait_for_process_to_finish() {
+  local PID="$1"
+  while ps -p "$PID" 1>/dev/null; do
+    echo -n "."
+    sleep 1
+  done
+}
+
 function _run_process_in_background() {
   local CMD_NAME="$1"
   local CMD_STRING="$2"
-  local PID
-  if hash "$CMD_NAME" >/dev/null 2>&1; then
-    PID=$(
+  if hash "$CMD_NAME" 2>/dev/null; then
+    echo -n "Updating $CMD_NAME "
+    _wait_for_process_to_finish "$(
       nohup sh -c "$CMD_STRING" >/dev/null 2>&1 &
       echo $!
-    )
-    echo -n "Updating $CMD_NAME "
-    while ps -p "$PID" >/dev/null 2>&1; do echo -n "." && sleep 1; done
+    )"
+    _text_green " Done!"
+  fi
+}
+
+function _run_sudo_process_in_background() {
+  local CMD_NAME="$1"
+  local CMD_STRING="$2"
+  if hash "$CMD_NAME" 2>/dev/null; then
+    echo -n "Updating (sudo) $CMD_NAME "
+    _wait_for_process_to_finish "$(
+      nohup sudo sh -c "$CMD_STRING" >/dev/null 2>&1 &
+      echo $!
+    )"
     _text_green " Done!"
   fi
 }
@@ -69,8 +90,8 @@ function _upgrade_packages() {
   _text_yellow "========================================="
   if [[ "$OSTYPE" == 'linux-gnu' ]]; then
     _run_process_in_background 'yay' 'yay --sync --refresh --sysupgrade --noconfirm'
-    _run_process_in_background 'pacman' 'pacman --sync --refresh --sysupgrade --noconfirm'
-    _run_process_in_background 'apt' 'apt update && apt dist-upgrade --assume-yes --no-install-recommends --fix-broken --fix-missing --quiet'
+    _run_sudo_process_in_background 'pacman' 'pacman --sync --refresh --sysupgrade --noconfirm'
+    _run_sudo_process_in_background 'apt' 'apt update && apt dist-upgrade --assume-yes --no-install-recommends --fix-broken --fix-missing --quiet'
   elif [[ "$OSTYPE" == 'darwin'* ]]; then
     _run_process_in_background 'brew' 'brew update && brew upgrade'
   fi
@@ -87,8 +108,8 @@ function _remove_unused_packages() {
   _text_yellow "========================================="
   if [[ "$OSTYPE" == 'linux-gnu' ]]; then
     _run_process_in_background 'yay' 'yay --yay --clean'
-    _run_process_in_background 'pacman' 'pacman --remove --nosave --recursive $(pacman --query --deps --unrequired --quiet)'
-    _run_process_in_background 'apt' 'apt autoremove --purge'
+    _run_sudo_process_in_background 'pacman' 'pacman --remove --nosave --recursive $(pacman --query --deps --unrequired --quiet)'
+    _run_sudo_process_in_background 'apt' 'apt autoremove --purge'
   elif [[ "$OSTYPE" == 'darwin'* ]]; then
     _run_process_in_background 'brew' 'brew cleanup --prune && brew bundle dump --force && brew bundle cleanup --force'
   fi
@@ -101,8 +122,8 @@ function _clear_package_cache() {
   _text_yellow "========================================="
   if [[ "$OSTYPE" == 'linux-gnu' ]]; then
     _run_process_in_background 'yay' 'yay --sync --clean'
-    _run_process_in_background 'pacman' 'pacman --sync --clean'
-    _run_process_in_background 'apt' 'apt clean'
+    _run_sudo_process_in_background 'pacman' 'pacman --sync --clean'
+    _run_sudo_process_in_background 'apt' 'apt clean'
     if hash pip3 2>/dev/null; then _remove_path_and_display_info "$HOME/.cache/pip"; fi
   elif [[ "$OSTYPE" == 'darwin'* ]]; then
     if hash brew 2>/dev/null; then _remove_path_and_display_info "$(brew --cache)"; fi
@@ -168,7 +189,9 @@ unset -f _text_cyan
 unset -f _text_white
 unset -f _print_all_done
 unset -f _remove_path_and_display_info
+unset -f _wait_for_process_to_finish
 unset -f _run_process_in_background
+unset -f _run_sudo_process_in_background
 unset -f _upgrade_packages
 unset -f _remove_unused_packages
 unset -f _clear_package_cache
