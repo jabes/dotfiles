@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-REPO_URL="git@github.com:jabes/dotfiles.git"
+REPO_URL="https://github.com/jabes/dotfiles.git"
 INSTALL_PATH="$HOME/.dotfiles"
 LOCAL_BIN_SCRIPTS_PATH="$HOME/bin/scripts"
 ZSH="$HOME/.oh-my-zsh"
@@ -38,7 +38,8 @@ function download() {
     OUTPUT="/tmp/$(date +%s)_$(basename "$LOCATION")"
   fi
   # Download file to defined output path
-  curl --fail \
+  curl \
+    --fail \
     --silent \
     --show-error \
     --location "$LOCATION" \

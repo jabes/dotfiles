@@ -21,17 +21,14 @@ It will also install a script that will ask to upgrade system packages once a da
 
 ### Installation
 
+#### via curl
+
 ```bash
-bash install.sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/jabes/dotfiles/master/install.sh)"
 ```
 
-Yep, that's it.
+#### via wget
 
-```text
-         __n__n__
-  .------`-\00/-'
- /  ##  ## (oo) - Cowabunga, dude!
-/ \## __   ./
-   |//YY \|/
-   |||   |||
+```bash
+bash -c "$(wget -O- https://raw.githubusercontent.com/jabes/dotfiles/master/install.sh)"
 ```
