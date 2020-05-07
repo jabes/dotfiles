@@ -277,6 +277,14 @@ multi_arch_install "zsh"
 multi_arch_install "vim"
 multi_arch_install "nodejs"
 
+# Ensure that NPM was installed
+if hash "npm" 2>/dev/null; then
+  echo "NPM was found! Thanks Node.js :)"
+else
+  echo "Hmm.. Node.js was installed but NPM is nowhere to be found."
+  multi_arch_install "npm"
+fi
+
 # Install sublime text channel
 multi_arch_channel_install \
   "https://download.sublimetext.com/sublimehq-pub.gpg" \
