@@ -56,22 +56,35 @@ function is_not_empty() {
 }
 
 function is_brew_package_cask() {
-  is_not_empty "$(brew cask info "$1" 2>/dev/null)"
+  is_not_empty "$(brew cask info "$1" | grep "$1")"
 }
 
 function is_brew_package_formula() {
-  is_not_empty "$(brew info --json "$1" 2>/dev/null)"
+  is_not_empty "$(brew info "$1" | grep "$1")"
 }
 
 function is_brew_cask_installed() {
-  is_not_empty "$(brew cask list "$1" 2>/dev/null)"
+  is_not_empty "$(brew cask list "$1" | grep "$1")"
 }
 
 function is_brew_formula_installed() {
-  is_not_empty "$(brew list "$1" 2>/dev/null)"
+  is_not_empty "$(brew list "$1" | grep "$1")"
+}
+
+function is_npm_package_installed() {
+  is_not_empty "$(npm list --global "$1" | grep "$1")"
+}
+
+function is_apt_package_installed() {
+  is_not_empty "$(apt list --installed "$1" | grep "$1")"
+}
+
+function is_pacman_package_installed() {
+  is_not_empty "$(pacman --query --explicit "$1" | grep "$1")"
 }
 
 function brew_install_cask() {
+  local PACKAGE="$1"
   if [[ "$(is_brew_cask_installed "$PACKAGE")" == "no" ]]; then
     echo -n "Installing brew cask '$PACKAGE' now..."
     run_process_in_background "brew cask install $PACKAGE"
@@ -88,6 +101,7 @@ function brew_install_cask() {
 }
 
 function brew_install_formula() {
+  local PACKAGE="$1"
   if [[ "$(is_brew_formula_installed "$PACKAGE")" == "no" ]]; then
     echo -n "Installing brew formula '$PACKAGE' now..."
     run_process_in_background "brew install $PACKAGE"
@@ -104,7 +118,7 @@ function brew_install_formula() {
 }
 
 function brew_install() {
-  PACKAGE="$1"
+  local PACKAGE="$1"
   if hash "brew" 2>/dev/null; then
     if [[ "$(is_brew_package_formula "$PACKAGE")" == "yes" ]]; then
       brew_install_formula "$PACKAGE"
@@ -120,10 +134,6 @@ function brew_install() {
     echo "Done"
     brew_install "$PACKAGE"
   fi
-}
-
-function is_npm_package_installed() {
-  is_not_empty "$(npm list --global "$PACKAGE" | grep "$PACKAGE")"
 }
 
 function npm_install_global_package() {
@@ -143,19 +153,11 @@ function npm_install_global_package() {
   fi
 }
 
-is_apt_package_installed() {
-  is_not_empty "$(apt list --installed "$1" | grep "$PACKAGE")"
-}
-
-is_pacman_package_installed() {
-  is_not_empty "$(pacman --query --explicit "$1" | grep "$PACKAGE")"
-}
-
 function install_apt_package() {
   local PACKAGE="$1"
   if [[ "$(is_apt_package_installed "$PACKAGE")" == "no" ]]; then
     echo -n "Installing apt package '$PACKAGE' now..."
-    run_process_in_background "apt install --assume-yes $PACKAGE"
+    run_sudo_process_in_background "apt install --assume-yes $PACKAGE"
     if [[ "$(is_apt_package_installed "$PACKAGE")" == "yes" ]]; then
       echo "Success"
     else
@@ -202,36 +204,42 @@ function multi_arch_install() {
 }
 
 function multi_arch_channel_install() {
-  local GPG_KEY_PATH
   local GPG_KEY_URL="$1"
   local GPG_KEY_ID="$2"
   local SOURCE_NAME="$3"
   local SOURCE_REPOSITORY_URL="$4"
   local SOURCE_DISTRIBUTION="$5"
   if [[ "$OSTYPE" == 'linux-gnu' ]]; then
-    multi_arch_install "apt-transport-https"
-    multi_arch_install "ca-certificates"
-    # Download public key
-    echo -n "Downloading '$SOURCE_NAME' gpg key..."
-    GPG_KEY_PATH=$(download "$GPG_KEY_URL")
-    echo "Done"
-    # Add repository to package manager
-    echo -n "Adding '$SOURCE_NAME' repository..."
     if hash "apt" 2>/dev/null; then
-      gpg --dearmor <"$GPG_KEY_PATH" | sudo tee "/etc/apt/trusted.gpg.d/$SOURCE_NAME.gpg" 1>/dev/null
-      echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "/etc/apt/sources.list.d/$SOURCE_NAME.list" 1>/dev/null
-      run_sudo_process_in_background "apt update"
+      multi_arch_install "apt-transport-https"
+      multi_arch_install "ca-certificates"
+      local SOURCE_FILE="/etc/apt/sources.list.d/$SOURCE_NAME.list"
+      local GPG_KEY_FILE="/etc/apt/trusted.gpg.d/$SOURCE_NAME.gpg"
+      if [[ -f "$SOURCE_FILE" ]]; then
+        echo "Repository '$SOURCE_NAME' is already added."
+      else
+        echo -n "Adding repository '$SOURCE_NAME' now..."
+        gpg --dearmor <"$(download "$GPG_KEY_URL")" | sudo tee "$GPG_KEY_FILE" 1>/dev/null
+        echo "deb ${SOURCE_REPOSITORY_URL} apt/${SOURCE_DISTRIBUTION}/" | sudo tee "$SOURCE_FILE" 1>/dev/null
+        run_sudo_process_in_background "apt update"
+        echo "Success"
+      fi
     elif hash "pacman" 2>/dev/null; then
-      sudo pacman-key --add "$GPG_KEY_PATH" 1>/dev/null
-      sudo pacman-key --lsign-key "$GPG_KEY_ID" 1>/dev/null
-      echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf 1>/dev/null
-      run_sudo_process_in_background "pacman --sync --refresh"
+      if grep --quiet "$SOURCE_NAME" /etc/pacman.conf; then
+        echo "Repository '$SOURCE_NAME' is already added."
+      else
+        echo -n "Adding repository '$SOURCE_NAME' now..."
+        sudo pacman-key --add "$(download "$GPG_KEY_URL")" 1>/dev/null
+        sudo pacman-key --lsign-key "$GPG_KEY_ID" 1>/dev/null
+        echo -e "\n[${SOURCE_NAME}]\nServer = ${SOURCE_REPOSITORY_URL}/arch/${SOURCE_DISTRIBUTION}/$(uname --machine)" | sudo tee --append /etc/pacman.conf 1>/dev/null
+        run_sudo_process_in_background "pacman --sync --refresh"
+        echo "Success"
+      fi
     else
       echo
       echo "Unable to add repository '$SOURCE_REPOSITORY_URL', aborting."
       abort
     fi
-    echo "Success"
   fi
 }
 
@@ -247,7 +255,7 @@ multi_arch_install "zsh"
 multi_arch_install "vim"
 multi_arch_install "npm"
 
-# Install channels
+# Install sublime text channel
 multi_arch_channel_install \
   "https://download.sublimetext.com/sublimehq-pub.gpg" \
   "8A8F901A" \
@@ -255,7 +263,7 @@ multi_arch_channel_install \
   "https://download.sublimetext.com/" \
   "stable"
 
-# Install sublime text
+# Install sublime text package
 multi_arch_install "sublime-text"
 
 if [[ -d "$INSTALL_PATH" ]]; then
