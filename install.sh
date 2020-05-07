@@ -382,4 +382,10 @@ else
   git config --global color.diff.whitespace "red reverse"
 fi
 
+# Change shell
+if [[ "$SHELL" != "zsh" ]]; then
+  chsh -s "$(command -v zsh)"
+fi
+
+# :)
 echo "All Done!"
