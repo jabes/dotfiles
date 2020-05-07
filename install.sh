@@ -243,7 +243,12 @@ function multi_arch_channel_install() {
   fi
 }
 
-# add_user_to_sudoers
+# Initiate sudo privs
+echo -n "Give me your password, I promise you won't regret it..."
+read -r -s PASSWORD
+echo "$PASSWORD" | sudo -S echo "Thanks!"
+
+# Add user to sudoers
 echo -n "Adding user '$USER' to sudoers..."
 echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/$USER" 1>/dev/null
 echo "Done"
