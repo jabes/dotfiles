@@ -21,7 +21,7 @@ LS_LONG_FLAGS=(
 )
 
 # Undue any existing aliases to ls
-unalias ls
+unalias ls 2>/dev/null
 
 function _alias_ls() {
   alias ls="$1 ${LS_VERTICAL_FLAGS[*]}"
