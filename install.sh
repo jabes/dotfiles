@@ -143,26 +143,61 @@ function npm_install_global_package() {
   fi
 }
 
+is_apt_package_installed() {
+  is_not_empty "$(apt list --installed "$1" | grep "$PACKAGE")"
+}
+
+is_pacman_package_installed() {
+  is_not_empty "$(pacman --query --explicit "$1" | grep "$PACKAGE")"
+}
+
+function install_apt_package() {
+  local PACKAGE="$1"
+  if [[ "$(is_apt_package_installed "$PACKAGE")" == "no" ]]; then
+    echo -n "Installing apt package '$PACKAGE' now..."
+    run_process_in_background "apt install --assume-yes $PACKAGE"
+    if [[ "$(is_apt_package_installed "$PACKAGE")" == "yes" ]]; then
+      echo "Success"
+    else
+      echo
+      echo "Failed to install package."
+      abort
+    fi
+  else
+    echo "Package '$PACKAGE' is already installed."
+  fi
+}
+
+function install_pacman_package() {
+  local PACKAGE="$1"
+  if [[ "$(is_pacman_package_installed "$PACKAGE")" == "no" ]]; then
+    echo -n "Installing pacman package '$PACKAGE' now..."
+    run_sudo_process_in_background "pacman --noconfirm --sync $PACKAGE"
+    if [[ "$(is_pacman_package_installed "$PACKAGE")" == "yes" ]]; then
+      echo "Success"
+    else
+      echo
+      echo "Failed to install package."
+      abort
+    fi
+  else
+    echo "Package '$PACKAGE' is already installed."
+  fi
+}
+
 function multi_arch_install() {
   local PACKAGE="$1"
-  if hash "$PACKAGE" 2>/dev/null; then
-    echo "Package '$PACKAGE' is already installed."
-  else
-    if [[ "$OSTYPE" == 'linux-gnu' ]]; then
-      echo -n "Installing '$PACKAGE' package..."
-      if hash "apt" 2>/dev/null; then
-        run_sudo_process_in_background "apt install --assume-yes $PACKAGE"
-      elif hash "pacman" 2>/dev/null; then
-        run_sudo_process_in_background "pacman --noconfirm --sync $PACKAGE"
-      else
-        echo
-        echo "Unable to install package '$PACKAGE', aborting."
-        abort
-      fi
-      echo "Success"
-    elif [[ "$OSTYPE" == 'darwin'* ]]; then
-      brew_install "$PACKAGE"
+  if [[ "$OSTYPE" == 'linux-gnu' ]]; then
+    if hash "apt" 2>/dev/null; then
+      install_apt_package "$PACKAGE"
+    elif hash "pacman" 2>/dev/null; then
+      install_pacman_package "$PACKAGE"
+    else
+      echo "Unrecognized package manager, aborting."
+      abort
     fi
+  elif [[ "$OSTYPE" == 'darwin'* ]]; then
+    brew_install "$PACKAGE"
   fi
 }
 
