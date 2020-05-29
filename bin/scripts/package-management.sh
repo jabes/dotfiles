@@ -99,7 +99,6 @@ function _upgrade_packages() {
   _run_process_in_background 'composer' 'composer self-update && composer global update --no-interaction --no-progress --no-suggest'
   _run_process_in_background 'pip3' 'pip3 list --outdated --format=freeze | grep --invert-match "^\-e" | cut --delimiter="=" --fields=1 | xargs -n1 pip3 install --upgrade'
   _run_process_in_background 'gcloud' 'gcloud components update'
-  _run_process_in_background 'op' 'op update'
 }
 
 function _remove_unused_packages() {
@@ -111,9 +110,8 @@ function _remove_unused_packages() {
     _run_sudo_process_in_background 'pacman' 'pacman --remove --nosave --recursive $(pacman --query --deps --unrequired --quiet)'
     _run_sudo_process_in_background 'apt' 'apt autoremove --purge'
   elif [[ "$OSTYPE" == 'darwin'* ]]; then
-    _run_process_in_background 'brew' 'brew cleanup --prune && brew bundle dump --force && brew bundle cleanup --force'
+    _run_process_in_background 'brew' 'brew cleanup --prune=0 && brew bundle dump --force && brew bundle cleanup --force'
   fi
-  _run_process_in_background 'npm' 'npm prune --global'
 }
 
 function _clear_package_cache() {
@@ -130,7 +128,7 @@ function _clear_package_cache() {
     if hash pip3 2>/dev/null; then _remove_path_and_display_info "$HOME/Library/Caches/pip"; fi
   fi
   if hash npm 2>/dev/null; then _remove_path_and_display_info "$(npm config get cache)"; fi
-  if hash composer 2>/dev/null; then _remove_path_and_display_info "$(composer config --global cache-dir)"; fi
+  if hash composer 2>/dev/null; then _remove_path_and_display_info "$(composer --working-dir="$HOME" config --global cache-dir)"; fi
 }
 
 function _ask_to_upgrade() {

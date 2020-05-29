@@ -65,23 +65,23 @@ function is_brew_package_formula() {
 }
 
 function is_brew_cask_installed() {
-  is_not_empty "$(brew cask list "$1" 2>/dev/null)"
+  is_not_empty "$(brew cask list | grep "$1")"
 }
 
 function is_brew_formula_installed() {
-  is_not_empty "$(brew list "$1" 2>/dev/null)"
+  is_not_empty "$(brew list | grep "$1")"
 }
 
 function is_npm_package_installed() {
-  is_not_empty "$(npm list --global 2>/dev/null | grep "$1")"
+  is_not_empty "$(npm list --global | grep "$1")"
 }
 
 function is_apt_package_installed() {
-  is_not_empty "$(apt list --installed 2>/dev/null | grep "$1")"
+  is_not_empty "$(apt list --installed | grep "$1")"
 }
 
 function is_pacman_package_installed() {
-  is_not_empty "$(pacman --query 2>/dev/null | grep "$1")"
+  is_not_empty "$(pacman --query | grep "$1")"
 }
 
 function brew_install_cask() {
