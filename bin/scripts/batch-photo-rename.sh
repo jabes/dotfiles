@@ -5,7 +5,10 @@ function rename-all-images-in-path() {
   local IMAGE_DIRECTORY="$1"
   local IMAGE_PREFIX="$2"
   local IMAGE_EXTENSION="$3"
+  local IMAGE_METADATA_EXTENSION="$4"
+  local IN_FILE
   local IN_PATH
+  local OUT_FILE
   local OUT_PATH
 
   # SC2016: Expressions don't expand in single quotes, use double quotes for that.
@@ -16,12 +19,16 @@ function rename-all-images-in-path() {
     -quiet \
     --composite \
     --printConv \
+    -extension "$IMAGE_EXTENSION" \
     -printFormat '$FileName' \
     -fileOrder DateTimeOriginal \
-    "$IMAGE_DIRECTORY" | while read -r IMAGE_FILENAME; do
+    "$IMAGE_DIRECTORY" | while read -r IMAGE_FILENAME
+  do
     INDEX=$((INDEX + 1))
-    IN_PATH="$IMAGE_DIRECTORY/$IMAGE_FILENAME"
-    OUT_PATH=$(printf "%s/%s%04d%s" "$IMAGE_DIRECTORY" "$IMAGE_PREFIX" "$INDEX" "$IMAGE_EXTENSION")
+    IN_FILE="$IMAGE_FILENAME"
+    IN_PATH="$IMAGE_DIRECTORY/$IN_FILE"
+    OUT_FILE=$(printf "%s%04d%s" "$IMAGE_PREFIX" "$INDEX" "$IMAGE_EXTENSION")
+    OUT_PATH="$IMAGE_DIRECTORY/$OUT_FILE"
 
     if [[ ! -e "$IN_PATH" ]]; then
       echo "Skip: $IN_PATH does not exist."
@@ -29,10 +36,6 @@ function rename-all-images-in-path() {
       continue
     elif [[ -d "$IN_PATH" ]]; then
       echo "Skip: $IN_PATH is a directory, file expected."
-      INDEX=$((INDEX - 1))
-      continue
-    elif [[ $(file -b "$IN_PATH") != 'JPEG'* ]]; then
-      echo "Skip: $IN_PATH is not a JPEG file type."
       INDEX=$((INDEX - 1))
       continue
     elif [[ "$OUT_PATH" == "$IN_PATH" ]]; then
@@ -46,25 +49,48 @@ function rename-all-images-in-path() {
     fi
 
     mv -i -- "$IN_PATH" "$OUT_PATH"
-    echo "Success: $IN_PATH -> $OUT_PATH"
+    echo "Renamed: $IN_PATH -> $OUT_PATH"
+
+    if [[ -f "${IN_PATH}${IMAGE_METADATA_EXTENSION}" ]]; then
+      mv -i -- "${IN_PATH}${IMAGE_METADATA_EXTENSION}" "${OUT_PATH}${IMAGE_METADATA_EXTENSION}"
+      echo "Renamed: ${IN_PATH}${IMAGE_METADATA_EXTENSION} -> ${OUT_PATH}${IMAGE_METADATA_EXTENSION}"
+      sed -i '' -e "s@${IN_FILE}@${OUT_FILE}@g" "${OUT_PATH}${IMAGE_METADATA_EXTENSION}"
+      echo "Replaced: ${IN_FILE} -> ${OUT_FILE} in file: ${OUT_PATH}${IMAGE_METADATA_EXTENSION}"
+    fi
   done
 }
 
 function batch-photo-rename() {
   local IMAGE_DIRECTORY=${1:-$PWD}
   local IMAGE_PREFIX=${2:-DSC_}
-  local IMAGE_EXTENSION=${3:-.JPG}
+  local IMAGE_EXTENSION=${3:-.NEF}
+  local IMAGE_METADATA_EXTENSION=${4:-.xmp}
+
+  echo "-- Start ---------------------------------------------------"
+
+  # Get absolute path from relative
+  IMAGE_DIRECTORY="$(realpath "$IMAGE_DIRECTORY")"
+  echo "Image directory: $IMAGE_DIRECTORY"
 
   if [[ -z "$(ls -A "$IMAGE_DIRECTORY")" ]]; then
     echo "Skip: $IMAGE_DIRECTORY is empty."
-    return 0
+    return 1
   fi
 
-  echo "Temp: $IMAGE_DIRECTORY"
-  rename-all-images-in-path "$IMAGE_DIRECTORY" ".TEMP_" "$IMAGE_EXTENSION"
-  echo "Move: $IMAGE_DIRECTORY"
-  rename-all-images-in-path "$IMAGE_DIRECTORY" "$IMAGE_PREFIX" "$IMAGE_EXTENSION"
-  echo "Done: $IMAGE_DIRECTORY"
+  # Ensure that ExifTool is installed
+  if hash "exiftool" 2>/dev/null; then
+    echo "ExifTool was found."
+  else
+    echo >&2 "ExifTool was not found, please install it."
+    echo >&2 "brew install exiftool"
+    return 1
+  fi
+
+  echo "-- Temp ----------------------------------------------------"
+  rename-all-images-in-path "$IMAGE_DIRECTORY" ".TEMP_" "$IMAGE_EXTENSION" "$IMAGE_METADATA_EXTENSION"
+  echo "-- Move ----------------------------------------------------"
+  rename-all-images-in-path "$IMAGE_DIRECTORY" "$IMAGE_PREFIX" "$IMAGE_EXTENSION" "$IMAGE_METADATA_EXTENSION"
+  echo "-- Done ----------------------------------------------------"
 }
 
 function recursive-batch-photo-rename() {

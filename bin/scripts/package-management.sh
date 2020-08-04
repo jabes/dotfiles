@@ -63,10 +63,8 @@ function _run_process_in_background() {
   local CMD_STRING="$2"
   if hash "$CMD_NAME" 2>/dev/null; then
     echo -n "Updating $CMD_NAME "
-    _wait_for_process_to_finish "$(
-      nohup sh -c "$CMD_STRING" >/dev/null 2>&1 &
-      echo $!
-    )"
+    nohup sh -c "$CMD_STRING" 1>/dev/null 2>&1 &
+    _wait_for_process_to_finish "$!"
     _text_green " Done!"
   fi
 }
@@ -76,10 +74,8 @@ function _run_sudo_process_in_background() {
   local CMD_STRING="$2"
   if hash "$CMD_NAME" 2>/dev/null; then
     echo -n "Updating (sudo) $CMD_NAME "
-    _wait_for_process_to_finish "$(
-      nohup sudo sh -c "$CMD_STRING" >/dev/null 2>&1 &
-      echo $!
-    )"
+    nohup sudo sh -c "$CMD_STRING" 1>/dev/null 2>&1 &
+    _wait_for_process_to_finish "$!"
     _text_green " Done!"
   fi
 }

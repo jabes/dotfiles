@@ -10,6 +10,14 @@ function abort() {
   exit 1
 }
 
+function is_empty() {
+  if [[ -z "$1" ]]; then return 0; else return 1; fi
+}
+
+function is_not_empty() {
+  if [[ -n "$1" ]]; then return 0; else return 1; fi
+}
+
 function wait_for_process_to_finish() {
   local PID="$1"
   while ps -p "$PID" 1>/dev/null; do
@@ -24,36 +32,27 @@ function run_process_in_background() {
   wait_for_process_to_finish "$!"
 }
 
-function run_sudo_process_in_background() {
-  local CMD_STRING="$1"
-  nohup sudo sh -c "$CMD_STRING" 1>/dev/null 2>&1 &
-  wait_for_process_to_finish "$!"
-}
-
 function download() {
-  local LOCATION="$1"
+  local URL="$1"
   local OUTPUT="$2"
   # Define output path if not specified
-  if [[ -z "$OUTPUT" ]]; then
-    OUTPUT="/tmp/$(date +%s)_$(basename "$LOCATION")"
+  if is_empty "$OUTPUT"; then
+    OUTPUT="$(mktemp -d)/$(basename "$URL")"
   fi
   # Download file to defined output path
   curl \
     --fail \
     --silent \
     --show-error \
-    --location "$LOCATION" \
-    --output "$OUTPUT"
+    --location \
+    --output "$OUTPUT" \
+    "$URL"
   # Return output path
   echo "$OUTPUT"
 }
 
 function download_and_run() {
   run_process_in_background "sh $(download "$1")"
-}
-
-function is_not_empty() {
-  if [[ -n "$1" ]]; then echo "yes"; else echo "no"; fi
 }
 
 function is_brew_package_cask() {
@@ -86,44 +85,44 @@ function is_pacman_package_installed() {
 
 function brew_install_cask() {
   local PACKAGE="$1"
-  if [[ "$(is_brew_cask_installed "$PACKAGE")" == "no" ]]; then
+  if is_brew_cask_installed "$PACKAGE"; then
+    echo "Brew cask '$PACKAGE' is already installed."
+  else
     echo -n "Installing brew cask '$PACKAGE' now..."
     run_process_in_background "brew cask install $PACKAGE"
-    if [[ "$(is_brew_cask_installed "$PACKAGE")" == "yes" ]]; then
+    if is_brew_cask_installed "$PACKAGE"; then
       echo "Success"
     else
       echo
       echo "Failed to install cask, aborting."
       abort
     fi
-  else
-    echo "Brew cask '$PACKAGE' is already installed."
   fi
 }
 
 function brew_install_formula() {
   local PACKAGE="$1"
-  if [[ "$(is_brew_formula_installed "$PACKAGE")" == "no" ]]; then
+  if is_brew_formula_installed "$PACKAGE"; then
+    echo "Brew formula '$PACKAGE' is already installed."
+  else
     echo -n "Installing brew formula '$PACKAGE' now..."
     run_process_in_background "brew install $PACKAGE"
-    if [[ "$(is_brew_formula_installed "$PACKAGE")" == "yes" ]]; then
+    if is_brew_formula_installed "$PACKAGE"; then
       echo "Success"
     else
       echo
       echo "Failed to install formula, aborting."
       abort
     fi
-  else
-    echo "Brew formula '$PACKAGE' is already installed."
   fi
 }
 
 function brew_install() {
   local PACKAGE="$1"
   if hash "brew" 2>/dev/null; then
-    if [[ "$(is_brew_package_formula "$PACKAGE")" == "yes" ]]; then
+    if is_brew_package_formula "$PACKAGE"; then
       brew_install_formula "$PACKAGE"
-    elif [[ "$(is_brew_package_cask "$PACKAGE")" == "yes" ]]; then
+    elif is_brew_package_cask "$PACKAGE"; then
       brew_install_cask "$PACKAGE"
     else
       echo "Could not find package '$PACKAGE' in brew repo, aborting."
@@ -139,52 +138,52 @@ function brew_install() {
 
 function npm_install_global_package() {
   local PACKAGE="$1"
-  if [[ "$(is_npm_package_installed "$PACKAGE")" == "no" ]]; then
+  if is_npm_package_installed "$PACKAGE"; then
+    echo "NPM already has '$PACKAGE' installed."
+  else
     echo -n "Installing '$PACKAGE' as global NPM package..."
     run_process_in_background "npm install --global $PACKAGE"
-    if [[ "$(is_npm_package_installed "$PACKAGE")" == "yes" ]]; then
+    if is_npm_package_installed "$PACKAGE"; then
       echo "Success"
     else
       echo
       echo "Failed to install package, aborting."
       abort
     fi
-  else
-    echo "NPM already has '$PACKAGE' installed."
   fi
 }
 
 function install_apt_package() {
   local PACKAGE="$1"
-  if [[ "$(is_apt_package_installed "$PACKAGE")" == "no" ]]; then
+  if is_apt_package_installed "$PACKAGE"; then
+    echo "Package '$PACKAGE' is already installed."
+  else
     echo -n "Installing apt package '$PACKAGE' now..."
     run_sudo_process_in_background "apt install --assume-yes $PACKAGE"
-    if [[ "$(is_apt_package_installed "$PACKAGE")" == "yes" ]]; then
+    if is_apt_package_installed "$PACKAGE"; then
       echo "Success"
     else
       echo
       echo "Failed to install package, aborting."
       abort
     fi
-  else
-    echo "Package '$PACKAGE' is already installed."
   fi
 }
 
 function install_pacman_package() {
   local PACKAGE="$1"
-  if [[ "$(is_pacman_package_installed "$PACKAGE")" == "no" ]]; then
+  if is_pacman_package_installed "$PACKAGE"; then
+    echo "Package '$PACKAGE' is already installed."
+  else
     echo -n "Installing pacman package '$PACKAGE' now..."
     run_sudo_process_in_background "pacman --noconfirm --sync $PACKAGE"
-    if [[ "$(is_pacman_package_installed "$PACKAGE")" == "yes" ]]; then
+    if is_pacman_package_installed "$PACKAGE"; then
       echo "Success"
     else
       echo
       echo "Failed to install package, aborting."
       abort
     fi
-  else
-    echo "Package '$PACKAGE' is already installed."
   fi
 }
 
@@ -259,15 +258,35 @@ function multi_arch_channel_install() {
   fi
 }
 
+function initiate_sudo_privileges() {
+  local CAN_RUN_SUDO
+  CAN_RUN_SUDO=$(sudo -n uptime 2>&1 | grep -c "load")
+  if [[ "$CAN_RUN_SUDO" -gt 0 ]]; then
+    "Sudo privileges already granted."
+  else
+    set -e
+    stty -echo
+    read -r -s -p "Give me your password: " PASSWORD
+    # -S : read the password from the standard input
+    # -p : override the default password prompt
+    echo "$PASSWORD" | sudo -S -p '' echo "Your password is mine now!"
+    unset PASSWORD
+    stty echo
+    set +e
+  fi
+}
+
+function add_user_to_sudoers() {
+  echo -n "Adding user '$USER' to sudoers..."
+  echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/$USER" 1>/dev/null
+  echo "Done"
+}
+
 # Initiate sudo privs
-echo -n "Give me your password, I promise you won't regret it..."
-read -r -s PASSWORD
-echo "$PASSWORD" | sudo -S echo "Thanks!"
+initiate_sudo_privileges
 
 # Add user to sudoers
-echo -n "Adding user '$USER' to sudoers..."
-echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/$USER" 1>/dev/null
-echo "Done"
+add_user_to_sudoers
 
 # Install dependencies
 multi_arch_update
