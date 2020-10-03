@@ -11,9 +11,9 @@
 function _alias_gnu_utils() {
   local ALIAS
   local FILENAME
-  local GNU_UTILS_DIR="/usr/local/opt/coreutils/bin"
-  if [[ -d "$GNU_UTILS_DIR" ]]; then
-    find "$GNU_UTILS_DIR" -type f -print0 | while IFS='' read -r -d '' GNU_PACKAGE; do
+  local DIR="$1"
+  if [[ -d "$DIR" ]]; then
+    find "$DIR" -type f -print0 | while IFS='' read -r -d '' GNU_PACKAGE; do
       FILENAME="$(basename "$GNU_PACKAGE")"
       ALIAS="${FILENAME:1}"
       alias "$ALIAS"="$GNU_PACKAGE"
@@ -21,5 +21,21 @@ function _alias_gnu_utils() {
   fi
 }
 
-_alias_gnu_utils
+declare -a _directories=(
+  "/usr/local/opt/coreutils/bin"
+  "/usr/local/opt/findutils/bin"
+  "/usr/local/opt/gnu-getopt/bin"
+  "/usr/local/opt/gnu-indent/bin"
+  "/usr/local/opt/gnu-sed/bin"
+  "/usr/local/opt/gnu-tar/bin"
+  "/usr/local/opt/gawk/bin"
+  "/usr/local/opt/grep/bin"
+)
+
+for _directory in "${_directories[@]}"; do
+  _alias_gnu_utils "$_directory"
+done
+
 unset -f _alias_gnu_utils
+unset _directories
+unset _directory

@@ -1,0 +1,77 @@
+directory: ~/Music/Library
+library: ~/Music/library.db
+
+import:
+  bell: yes
+  move: yes
+  write: yes
+  detail: no
+  resume: no
+  autotag: yes
+  from_scratch: yes
+  default_action: apply
+  duplicate_action: ask
+  log: ~/Music/beets.log
+
+musicbrainz:
+  host: musicbrainz.org
+  ratelimit: 100
+  searchlimit: 5
+
+paths:
+  default: $albumartist/$album%aunique{}/$track $title
+  singleton: Non-Album/$artist/$title
+  comp: Compilations/$album%aunique{}/$track $title
+
+ui:
+  color: yes
+  colors:
+    text_success: green
+    text_warning: yellow
+    text_error: red
+    text_highlight: red
+    text_highlight_minor: lightgray
+    action_default: turquoise
+    action: blue
+
+plugins: scrub fetchart embedart lastgenre duplicates
+
+scrub:
+  auto: yes
+
+fetchart:
+  auto: yes
+  cautious: no
+  store_source: no
+  minwidth: 0
+  maxwidth: 0
+  enforce_ratio: yes
+  cover_names: cover front art album folder
+  sources: coverart itunes amazon albumart
+
+embedart:
+  auto: yes
+  compare_threshold: 0
+  ifempty: no
+  maxwidth: 800
+  remove_art_file: no
+
+lastgenre:
+  auto: yes
+  force: yes
+  count: 5
+  whitelist: yes
+  canonical: no
+  prefer_specific: no
+  min_weight: 10
+  source: album
+  separator: ', '
+
+duplicates:
+  album: no
+  count: no
+  delete: no
+  full: no
+  merge: no
+  path: no
+  strict: no

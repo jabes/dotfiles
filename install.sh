@@ -2,9 +2,18 @@
 
 REPO_URL="https://github.com/jabes/dotfiles.git"
 INSTALL_PATH="$HOME/.dotfiles"
-LOCAL_BIN_SCRIPTS_PATH="$HOME/bin/scripts"
+LOCAL_BIN_PATH="$HOME/bin"
+LOCAL_SCRIPTS_PATH="$LOCAL_BIN_PATH/scripts"
 ZSH="$HOME/.oh-my-zsh"
 ZSH_CUSTOM="$ZSH/custom"
+
+function pushd() {
+  command pushd "$@" > /dev/null
+}
+
+function popd() {
+  command popd "$@" > /dev/null
+}
 
 function abort() {
   exit 1
@@ -20,7 +29,7 @@ function is_not_empty() {
 
 function wait_for_process_to_finish() {
   local PID="$1"
-  while ps -p "$PID" 1>/dev/null; do
+  while ps -p "$PID" >/dev/null; do
     echo -n "."
     sleep 1
   done
@@ -28,7 +37,8 @@ function wait_for_process_to_finish() {
 
 function run_process_in_background() {
   local CMD_STRING="$1"
-  nohup sh -c "$CMD_STRING" 1>/dev/null 2>&1 &
+  sh -c "$CMD_STRING" >/dev/null 2>&1 &
+  disown
   wait_for_process_to_finish "$!"
 }
 
@@ -64,7 +74,7 @@ function is_brew_package_formula() {
 }
 
 function is_brew_cask_installed() {
-  is_not_empty "$(brew cask list | grep "$1")"
+  is_not_empty "$(brew list --cask | grep "$1")"
 }
 
 function is_brew_formula_installed() {
@@ -262,7 +272,7 @@ function initiate_sudo_privileges() {
   local CAN_RUN_SUDO
   CAN_RUN_SUDO=$(sudo -n uptime 2>&1 | grep -c "load")
   if [[ "$CAN_RUN_SUDO" -gt 0 ]]; then
-    "Sudo privileges already granted."
+    echo "Sudo privileges already granted."
   else
     set -e
     stty -echo
@@ -290,11 +300,13 @@ add_user_to_sudoers
 
 # Install dependencies
 multi_arch_update
+multi_arch_install "bash"
 multi_arch_install "curl"
 multi_arch_install "git"
 multi_arch_install "zsh"
 multi_arch_install "vim"
-multi_arch_install "nodejs"
+multi_arch_install "node"
+multi_arch_install "python"
 
 # Ensure that NPM was installed
 if hash "npm" 2>/dev/null; then
@@ -324,12 +336,12 @@ else
 fi
 
 # Copy custom paths script to user bin directory
-if [[ -f "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh" ]]; then
+if [[ -f "$LOCAL_SCRIPTS_PATH/custom-paths.sh" ]]; then
   echo "Custom paths is already installed."
 else
   echo -n "Creating custom paths..."
-  mkdir -p "$LOCAL_BIN_SCRIPTS_PATH"
-  cp "$INSTALL_PATH/custom-paths.sh" "$LOCAL_BIN_SCRIPTS_PATH/custom-paths.sh"
+  mkdir -p "$LOCAL_SCRIPTS_PATH"
+  cp "$INSTALL_PATH/custom-paths.sh" "$LOCAL_SCRIPTS_PATH/custom-paths.sh"
   echo "Done"
 fi
 
@@ -339,7 +351,7 @@ ln -s -f "$INSTALL_PATH/.npmrc" "$HOME/.npmrc"
 ln -s -f "$INSTALL_PATH/.zshrc" "$HOME/.zshrc"
 ln -s -f \
   "$INSTALL_PATH/submodules/timelapse-deflicker/timelapse-deflicker.pl" \
-  "$LOCAL_BIN_SCRIPTS_PATH/timelapse-deflicker.pl"
+  "$LOCAL_SCRIPTS_PATH/timelapse-deflicker.pl"
 echo "Done"
 
 # Link sublime on OSX
@@ -390,14 +402,23 @@ fi
 # Install GNU utils on OSX
 # These also get aliased in bin/scripts/gnu-utils-alias.sh
 if [[ "$OSTYPE" == 'darwin'* ]]; then
+  # https://apple.stackexchange.com/a/69332
   brew_install "coreutils"
+  brew_install "diffutils"
+  brew_install "findutils"
+  brew_install "gnu-getopt"
+  brew_install "gnu-indent"
+  brew_install "gnu-sed"
+  brew_install "gnu-tar"
+  brew_install "gawk"
+  brew_install "grep"
 fi
 
 # Install diff-so-fancy and configure git to use it by default for diffs
 npm_install_global_package "diff-so-fancy"
 GIT_CORE_PAGER="diff-so-fancy | less --tabs=4 -RFX"
 if [[ "$(git config --global core.pager)" == "$GIT_CORE_PAGER" ]]; then
-  echo "Git is already configured to use good-lookin diffs."
+  echo "Git is already configured to use diff-so-fancy."
 else
   echo -n "Configuring git to use diff-so-fancy by default..."
   git config --global core.pager "$GIT_CORE_PAGER"
@@ -413,6 +434,34 @@ else
   git config --global color.diff.old "red bold"
   git config --global color.diff.new "green bold"
   git config --global color.diff.whitespace "red reverse"
+  echo "Done"
+fi
+
+# Install beets: the music geek’s media organizer
+# https://beets.readthedocs.io/en/stable/guides/main.html
+BEETS_PATH="$LOCAL_BIN_PATH/beets"
+if [[ -d "$BEETS_PATH" ]]; then
+  echo "Beets is already installed."
+else
+  echo -n "Installing beet dependencies..."
+  pip3 install --quiet --quiet --quiet requests pillow pylast
+  echo "Done"
+  # --
+  echo -n "Cloning beets repository..."
+  git clone --quiet https://github.com/beetbox/beets.git "$BEETS_PATH"
+  echo "Done"
+  # --
+  echo -n "Building beets..."
+  pushd "$BEETS_PATH"
+  if python3 setup.py build &>/dev/null; then echo "Done" && popd; else echo "Failed" && abort; fi
+  # --
+  echo -n "Installing beets..."
+  pushd "$BEETS_PATH"
+  if python3 setup.py install &>/dev/null; then echo "Done" && popd; else echo "Failed" && abort; fi
+  # --
+  echo -n "Configuring beets..."
+  mkdir -p "$HOME/.config/beets"
+  ln -s -f "$INSTALL_PATH/config/beets/config.yaml" "$HOME/.config/beets/config.yaml"
   echo "Done"
 fi
 

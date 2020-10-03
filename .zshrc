@@ -13,6 +13,8 @@ export PATH=$(IFS=:; echo "${PATHS[*]}")
 export ZSH="$HOME/.oh-my-zsh"
 
 ZSH_THEME="robbyrussell"
+ZSH_DISABLE_COMPFIX="true"
+
 plugins=(
     git
     git-flow
